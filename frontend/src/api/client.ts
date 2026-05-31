@@ -16,12 +16,26 @@ export interface LayerLens {
   predictions: TokenPrediction[];
 }
 
+/** One token's probability trajectory across every layer (The Race centerpiece).
+ *  `probs[i]` is this token's probability at layer `i` (length = n_layers). */
+export interface TokenTrajectory {
+  token: string;
+  probs: number[];
+  peak: number;
+  peakLayer: number;
+  finalProb: number;
+}
+
 /** Response of POST /analyze. */
 export interface AnalyzeResponse {
   prompt_id: string;
   tokens: string[];
   logit_lens: LayerLens[];
   next_token_topk: TokenPrediction[];
+  /** Per-token probability lines across layers, for The Race. */
+  trajectories: TokenTrajectory[];
+  /** Per-layer Shannon entropy in bits (length = n_layers); the uncertainty channel. */
+  entropy: number[];
 }
 
 // --- Phase 3 (attention) type stub. Not fetched in Phase 2; declared here so
