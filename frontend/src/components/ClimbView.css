@@ -53,3 +53,15 @@
   font-family: var(--font-ui);
   font-size: 12px;
 }
+
+/* Trajectory lines: neutral ink, thin. The early-layer bunching near the
+   baseline reads as the faint "undecided" cluster on its own. No leader
+   emphasis or labels yet (M4). */
+.climb-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-opacity: 0.68;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
