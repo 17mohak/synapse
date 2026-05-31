@@ -14,7 +14,7 @@ import uuid
 
 import torch
 
-from logit_lens import compute_logit_lens, compute_trajectories
+from logit_lens import compute_logit_lens, compute_trajectories, compute_entropy
 from model import model
 
 # Cap prompt length in the MVP to keep attention payloads bounded
@@ -40,6 +40,9 @@ def analyze(prompt: str) -> dict:
     # Continuous per-layer trajectories for a fixed token set (The Race centerpiece).
     trajectories = compute_trajectories(model, cache)
 
+    # Per-layer entropy (bits): the uncertainty channel under The Race.
+    entropy = compute_entropy(model, cache)
+
     # Actual next-token prediction: top-10 over the final position (BRIEF sec. 7 step 5).
     final_probs = logits[0, -1].softmax(dim=-1)
     top = torch.topk(final_probs, 10)
@@ -60,6 +63,7 @@ def analyze(prompt: str) -> dict:
         "logit_lens": logit_lens,
         "next_token_topk": next_token_topk,
         "trajectories": trajectories,
+        "entropy": entropy,
     }
 
 

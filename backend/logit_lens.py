@@ -9,6 +9,8 @@ top-k predictions for the FINAL token position. This reveals how the model's
 (BRIEF.md sec. 7 step 4; nostalgebraist 2020.)
 """
 
+import math
+
 import torch
 
 
@@ -89,3 +91,26 @@ def compute_trajectories(model, cache, per_layer_k: int = 5, cap: int = 8):
     # Stable, meaningful order for the frontend: the eventual winner first.
     trajectories.sort(key=lambda t: t["finalProb"], reverse=True)
     return trajectories
+
+
+def compute_entropy(model, cache):
+    """Return per-layer Shannon entropy (bits) of the final-position distribution.
+
+    Entropy is the uncertainty channel under The Race: how *undecided* the model
+    is at each layer. It is high in early layers (probability mass spread across
+    many near-equal candidates) and collapses as the answer commits, so the trend
+    is the numeric backbone of "undecided -> decided". Same lens projection as the
+    trajectories (ln_final -> W_U + b_U -> softmax), over the full vocabulary.
+
+    Result: [ float, ... x n_layers ]  # entropy in bits, one per layer in order.
+    """
+    inv_ln2 = 1.0 / math.log(2.0)  # nats -> bits
+    entropy = []
+    for layer in range(model.cfg.n_layers):
+        resid = model.ln_final(cache["resid_post", layer])
+        logits = resid @ model.W_U + model.b_U
+        probs = logits[0, -1].softmax(dim=-1)
+        # torch.special.entr(p) = -p * ln(p), with entr(0)=0 defined (no NaNs).
+        nats = torch.special.entr(probs).sum()
+        entropy.append(round((nats * inv_ln2).item(), 4))
+    return entropy
