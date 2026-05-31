@@ -1,7 +1,7 @@
 """FastAPI app for Synapse (MVP backend).
 
 Endpoints (BRIEF.md sec. 6):
-  POST /analyze                       -> { prompt_id, tokens, logit_lens, next_token_topk }
+  POST /analyze                       -> { prompt_id, tokens, logit_lens, next_token_topk, trajectories }
   GET  /attention/{layer}/{head}      -> one head's [seq x seq] pattern (lazy)
 
 The model singleton loads at import (via extract -> model), i.e. at startup.

@@ -231,3 +231,17 @@ discrepancy an interviewer would immediately probe. **Do not "fix" this back to 
 3. To sanity-check the backend: `cd backend`, start uvicorn (cmd in §3), open `/docs`, POST a
    prompt, GET an attention head with the returned `prompt_id`.
 4. Respect the scope lock (§2) and the phase gates. The understanding is the product.
+
+---
+
+## 11. Phase 2.5 changelog — The Race redesign
+
+Redesign of the Phase 2 logit-lens centerpiece from a rank×layer cell grid into
+**The Race**, a continuous trajectory visualization (see DESIGN.md and the approved
+build spec). Backend changes are additive; the old grid keeps working until the
+swap at M10. Each milestone is one atomic commit. `(this commit)` in the Commit
+column resolves to the hash printed for that milestone's commit.
+
+| Milestone | Commit | Date | Summary | Rollback |
+|---|---|---|---|---|
+| m0a | (this commit) | 2026-06-01 | Add `trajectories` to `/analyze`: per-layer probabilities for a fixed tracked token set (union of each layer's top-5, ranked by peak, capped at 8). New `compute_trajectories()` in `logit_lens.py`. Additive; old fields unchanged. | Revert the commit; `/analyze` loses `trajectories`. No frontend consumes it yet, so the running app is unaffected. |

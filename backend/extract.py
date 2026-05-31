@@ -14,7 +14,7 @@ import uuid
 
 import torch
 
-from logit_lens import compute_logit_lens
+from logit_lens import compute_logit_lens, compute_trajectories
 from model import model
 
 # Cap prompt length in the MVP to keep attention payloads bounded
@@ -37,6 +37,9 @@ def analyze(prompt: str) -> dict:
     # Per-layer logit lens for the final position (small).
     logit_lens = compute_logit_lens(model, cache, k=5)
 
+    # Continuous per-layer trajectories for a fixed token set (The Race centerpiece).
+    trajectories = compute_trajectories(model, cache)
+
     # Actual next-token prediction: top-10 over the final position (BRIEF sec. 7 step 5).
     final_probs = logits[0, -1].softmax(dim=-1)
     top = torch.topk(final_probs, 10)
@@ -56,6 +59,7 @@ def analyze(prompt: str) -> dict:
         "tokens": str_tokens,
         "logit_lens": logit_lens,
         "next_token_topk": next_token_topk,
+        "trajectories": trajectories,
     }
 
 
