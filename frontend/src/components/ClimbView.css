@@ -54,14 +54,66 @@
   font-size: 12px;
 }
 
-/* Trajectory lines: neutral ink, thin. The early-layer bunching near the
-   baseline reads as the faint "undecided" cluster on its own. No leader
-   emphasis or labels yet (M4). */
+/* Trajectory lines, tiered by final-layer probability. */
 .climb-line {
   fill: none;
-  stroke: var(--ink);
-  stroke-width: 1.5;
-  stroke-opacity: 0.68;
   stroke-linejoin: round;
   stroke-linecap: round;
+}
+
+/* Winner: the model's actual prediction. Amber leader emphasis, on top. */
+.climb-line--winner {
+  stroke: var(--accent);
+  stroke-width: 2.25;
+  stroke-opacity: 1;
+}
+
+/* Serious contenders: neutral ink, clearly readable. */
+.climb-line--contender {
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-opacity: 0.85;
+}
+
+/* Background candidates (incl. transient early spikes): recede. */
+.climb-line--bg {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-opacity: 0.3;
+}
+
+/* Endpoint dots anchor labels to their lines. */
+.climb-dot--winner {
+  fill: var(--accent);
+}
+
+.climb-dot--contender {
+  fill: var(--ink);
+  fill-opacity: 0.85;
+}
+
+.climb-connector {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+/* Endpoint labels: token + final probability, monospace. */
+.climb-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.climb-label--winner {
+  fill: var(--accent);
+  font-weight: 600;
+}
+
+.climb-label--contender {
+  fill: var(--muted);
+}
+
+.climb__amber {
+  color: var(--accent);
+  font-weight: 600;
 }
