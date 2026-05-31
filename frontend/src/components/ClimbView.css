@@ -1,0 +1,55 @@
+.climb {
+  width: 100%;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.climb__head {
+  margin-bottom: 12px;
+}
+
+.climb__title {
+  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
+}
+
+.climb__caption {
+  margin: 6px 0 0;
+  max-width: 70ch;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.climb__plot {
+  width: 100%;
+}
+
+.climb__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Axes: low-ink, mono ticks (DESIGN.md). */
+.climb-axis text {
+  fill: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.climb-axis .tick line {
+  stroke: var(--border-strong);
+}
+
+/* Faint full-width horizontal reference lines = the chart frame. */
+.climb-grid {
+  stroke: var(--border);
+  stroke-opacity: 0.35;
+}
+
+.climb__axislabel {
+  fill: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+}

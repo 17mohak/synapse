@@ -1,6 +1,7 @@
 import PromptBar from "./components/PromptBar";
 import TokenStrip from "./components/TokenStrip";
 import LogitLensView from "./components/LogitLensView";
+import ClimbView from "./components/ClimbView";
 import type { TokenPrediction } from "./api/client";
 import { useStore } from "./state/store";
 import "./App.css";
@@ -90,6 +91,9 @@ export default function App() {
             <TokenStrip tokens={result.tokens} />
             <NextToken predictions={result.next_token_topk} />
             <LogitLensView result={result} />
+            {/* M2: The Race scaffold, mounted below the existing grid. The grid
+                remains the live centerpiece until the swap at M10. */}
+            <ClimbView result={result} />
           </div>
         )}
         {status === "error" && !result && (
