@@ -1,0 +1,6 @@
+# Install CPU torch from the official index first if resolving is slow:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch==2.12.0
+transformer_lens==3.3.0
+fastapi==0.136.3
+uvicorn[standard]==0.48.0
