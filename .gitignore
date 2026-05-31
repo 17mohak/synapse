@@ -1,0 +1,19 @@
+# Python virtual environment
+backend/.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Hugging Face / model caches
+.cache/
+
+# Claude Code local files
+.claude/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
