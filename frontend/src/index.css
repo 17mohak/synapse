@@ -1,0 +1,127 @@
+/* Synapse design tokens — see DESIGN.md. Dark, Linear/Observable-lineage,
+   restrained amber accent reserved for the "answer/peak". OKLCH throughout. */
+
+:root {
+  /* Surfaces */
+  --bg: oklch(0.165 0.005 256);
+  --surface: oklch(0.205 0.006 256);
+  --surface-2: oklch(0.245 0.007 256);
+  --border: oklch(0.3 0.008 256);
+  --border-strong: oklch(0.38 0.01 256);
+
+  /* Text */
+  --ink: oklch(0.965 0.003 256);
+  --muted: oklch(0.76 0.006 256);
+  --faint: oklch(0.62 0.006 256);
+
+  /* Brand accent — amber/honey (seed hue 80) */
+  --accent: oklch(0.8 0.14 80);
+  --accent-strong: oklch(0.86 0.15 85);
+  --accent-ink: oklch(0.2 0.03 80);
+
+  /* Semantic */
+  --error: oklch(0.64 0.18 25);
+  --focus: var(--accent);
+
+  /* Logit-lens probability ramp (low -> high probability) */
+  --ramp-0: oklch(0.38 0.01 256);
+  --ramp-1: oklch(0.52 0.04 120);
+  --ramp-2: oklch(0.65 0.09 95);
+  --ramp-3: oklch(0.76 0.13 84);
+  --ramp-4: oklch(0.84 0.15 80);
+
+  /* Radii / elevation */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow: 0 4px 16px oklch(0 0 0 / 0.35);
+
+  /* Type scale (fixed rem; product UI) */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.6rem;
+
+  --font-ui: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Spacing base */
+  --space: 8px;
+
+  /* z-index scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-toast: 300;
+  --z-tooltip: 400;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 180ms;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+input,
+select,
+button {
+  font-size: var(--text-base);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: oklch(0.8 0.14 80 / 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

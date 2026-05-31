@@ -1,0 +1,85 @@
+.lens {
+  width: 100%;
+}
+
+.lens__head {
+  margin-bottom: 16px;
+}
+
+.lens__title {
+  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
+}
+
+.lens__caption {
+  margin: 6px 0 0;
+  max-width: 70ch;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.lens__caption strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.lens__token-inline {
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+
+.lens__scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.lens__svg {
+  display: block;
+}
+
+/* Cells */
+.lens__rect {
+  stroke: oklch(1 0 0 / 0.06);
+  stroke-width: 1;
+}
+
+.lens__rect--answer {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.lens__token {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.lens__prob {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.lens__rank {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--faint);
+}
+
+.lens__layerlabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--faint);
+}
+
+.lens__layerlabel--resolve {
+  fill: var(--accent);
+  font-weight: 600;
+}
+
+.lens__col:hover .lens__rect {
+  stroke: var(--border-strong);
+}
+
+.lens__col:hover .lens__rect--answer {
+  stroke: var(--accent-strong);
+}

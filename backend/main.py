@@ -8,11 +8,24 @@ The model singleton loads at import (via extract -> model), i.e. at startup.
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import extract
 
 app = FastAPI(title="Synapse", description="Watch a transformer think (GPT-2 small).")
+
+# The Phase 2 frontend runs on the Vite dev server (a different origin), so the
+# browser needs CORS to reach this API. Local dev only; scope to the Vite host.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 
 class AnalyzeRequest(BaseModel):

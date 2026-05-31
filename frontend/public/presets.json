@@ -1,0 +1,7 @@
+[
+  { "label": "First U.S. president → Washington", "prompt": "The first president of the United States was George" },
+  { "label": "Water → oxygen", "prompt": "Water is made of hydrogen and" },
+  { "label": "Capital of Japan → Tokyo", "prompt": "The capital of Japan is the city of" },
+  { "label": "Capital of France → Paris", "prompt": "The capital of France is the city of" },
+  { "label": "Opposite of hot → cold", "prompt": "The opposite of hot is" }
+]
