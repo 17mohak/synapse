@@ -14,7 +14,6 @@ interface ClimbViewProps {
 
 const Y_TICKS = [0, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0];
 const MAX_LINES = 6;
-const MAX_ENTROPY = 10; // fixed, comparable ribbon ceiling (see m6)
 const SWEEP_MS = 2600; // one steady pass through the layers
 
 const prose = (t: string) => t.trim(); // the token as a word, for the verdict
@@ -52,10 +51,13 @@ export default function ClimbView({ result }: ClimbViewProps) {
     const yMax = Math.min(1, globalPeak * 1.02);
 
     const width = 920;
-    const svgHeight = 556;
-    const margin = { top: 20, right: 150, bottom: 44, left: 56 };
+    const margin = { top: 20, right: 150, bottom: 48, left: 56 };
     const innerW = width - margin.left - margin.right;
-    const innerH = 460 - margin.top - margin.bottom;
+    // The entropy ribbon is gone (its story — the model's doubt — is now told by
+    // the verdict's moat). The race grows into the reclaimed space so the
+    // trajectories breathe and the winner's standing has room to read.
+    const innerH = 452;
+    const svgHeight = margin.top + innerH + margin.bottom;
 
     svg.attr("viewBox", `0 0 ${width} ${svgHeight}`);
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
@@ -96,15 +98,6 @@ export default function ClimbView({ result }: ClimbViewProps) {
 
     const line = d3.line<number>().x((_d, i) => x(i)).y((d) => y(d)).curve(d3.curveMonotoneX);
 
-    // Ribbon geometry.
-    const entropy = result.entropy ?? [];
-    const ribbonTop = innerH + 38 + 26;
-    const ribbonH = 52;
-    const ribbonBase = ribbonTop + ribbonH;
-    const entY = d3.scaleLinear().domain([0, MAX_ENTROPY]).range([ribbonBase, ribbonTop]).clamp(true);
-    const entArea = d3.area<number>().x((_d, i) => x(i)).y0(ribbonBase).y1((d) => entY(d)).curve(d3.curveMonotoneX);
-    const entLine = d3.line<number>().x((_d, i) => x(i)).y((d) => entY(d)).curve(d3.curveMonotoneX);
-
     // Ghost layer (the full, faint "not yet revealed" scaffold) — always visible.
     const ghostG = g.append("g").attr("class", "climb-ghost");
     ghostG.selectAll("path.climb-line")
@@ -112,24 +105,15 @@ export default function ClimbView({ result }: ClimbViewProps) {
       .join("path")
       .attr("class", (d) => `climb-line climb-line--ghost climb-line--${tierOf(d)}`)
       .attr("d", (d) => line(d.probs));
-    ghostG.append("path").datum(entropy).attr("class", "climb-ribbon__area climb-ribbon__area--ghost").attr("d", entArea);
 
     // Reveal layer (full-fidelity, clipped to x <= frontier).
-    svg.append("clipPath").attr("id", clipId).append("rect").attr("class", "climb-clip").attr("x", -4).attr("y", -20).attr("width", 0).attr("height", ribbonBase + 40);
+    svg.append("clipPath").attr("id", clipId).append("rect").attr("class", "climb-clip").attr("x", -4).attr("y", -20).attr("width", 0).attr("height", innerH + 40);
     const revealG = g.append("g").attr("class", "climb-reveal").attr("clip-path", `url(#${clipId})`);
-    revealG.append("path").datum(entropy).attr("class", "climb-ribbon__area").attr("d", entArea);
-    revealG.append("path").datum(entropy).attr("class", "climb-ribbon__line").attr("d", entLine);
     revealG.selectAll("path.climb-line--solid")
       .data(ordered, (d) => (d as TokenTrajectory).token)
       .join("path")
       .attr("class", (d) => `climb-line climb-line--solid climb-line--${tierOf(d)}`)
       .attr("d", (d) => line(d.probs));
-
-    // Ribbon static chrome (baseline, label, end value).
-    g.append("line").attr("class", "climb-ribbon__base").attr("x1", 0).attr("x2", innerW).attr("y1", ribbonBase).attr("y2", ribbonBase);
-    g.append("text").attr("class", "climb-ribbon__label").attr("x", 0).attr("y", ribbonTop - 6).text("uncertainty (bits)");
-    const lastE = entropy[entropy.length - 1] ?? 0;
-    g.append("text").attr("class", "climb-ribbon__end").attr("x", innerW + 8).attr("y", entY(lastE)).attr("dominant-baseline", "middle").text(lastE.toFixed(1));
 
     // The verdict, "The Standing": the winner and the rivals the model still
     // entertains, placed on an implicit probability axis (higher = more probable).
@@ -176,7 +160,7 @@ export default function ClimbView({ result }: ClimbViewProps) {
     }
 
     // Playhead cursor + current-layer dots.
-    const playhead = g.append("line").attr("class", "climb-playhead").attr("y1", 0).attr("y2", ribbonBase);
+    const playhead = g.append("line").attr("class", "climb-playhead").attr("y1", 0).attr("y2", innerH);
     const dotData = [winner, ...contenders].filter(Boolean) as TokenTrajectory[];
     const playdots = g.append("g").attr("class", "climb-playdots").selectAll("circle")
       .data(dotData, (d) => (d as TokenTrajectory).token)
