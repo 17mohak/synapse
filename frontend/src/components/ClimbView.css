@@ -99,9 +99,21 @@
 }
 .climb-line--solid.climb-line--contender {
   stroke-opacity: 0.85;
+  transition: stroke-opacity 320ms var(--ease-out);
 }
 .climb-line--solid.climb-line--bg {
   stroke-opacity: 0.3;
+  transition: stroke-opacity 320ms var(--ease-out);
+}
+
+/* At rest on the resolved final layer of a decisive run, the also-rans recede so
+   the lone winning answer carries the eye (it settles into "The Standing"). On
+   scrub back to any earlier layer the field returns to full presence. */
+.climb-reveal.is-resolved .climb-line--solid.climb-line--contender {
+  stroke-opacity: 0.34;
+}
+.climb-reveal.is-resolved .climb-line--solid.climb-line--bg {
+  stroke-opacity: 0.12;
 }
 
 /* Ghost (not yet revealed): uniform faint ink for every tier, so no tier colour

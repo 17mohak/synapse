@@ -171,6 +171,13 @@ export default function ClimbView({ result }: ClimbViewProps) {
     const clip = svg.select<SVGRectElement>(".climb-clip");
     const igniteLayer = events.nodes[0]?.layer ?? null;
 
+    // Did the winner clearly separate? (Same test composeThesis uses for "pulls
+    // clearly ahead".) Only then do we quiet the also-rans once the race settles,
+    // so the lone answer reads. A hedge or near-miss never separates, so its
+    // crowd stays co-present at rest — the honest picture of "didn't know".
+    const runnerFinal = events.contenders[0]?.finalProb ?? 0;
+    const decisive = !!winner && winner.finalProb >= 0.1 && winner.finalProb >= 2 * runnerFinal;
+
     // The one function that maps a (possibly fractional) layer to the whole scene.
     const applyLayer = (frontier: number) => {
       const f = Math.max(0, Math.min(last, frontier));
@@ -181,6 +188,10 @@ export default function ClimbView({ result }: ClimbViewProps) {
       const ignited = igniteLayer == null || f >= igniteLayer - 1e-6;
       revealG.classed("is-ignited", ignited);
       nodeG.style("opacity", ignited ? 1 : 0);
+
+      // At rest on the final, resolved layer the winner stands alone (decisive
+      // runs only); scrub back to any earlier layer and the field returns.
+      revealG.classed("is-resolved", decisive && f >= last - 1e-6);
 
       const li = Math.round(f);
       xg.selectAll<SVGGElement, number>(".tick").classed("climb-tick--active", (d) => d === li);
