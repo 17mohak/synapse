@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
 import type { AnalyzeResponse, TokenTrajectory } from "../api/client";
+import { deriveClimbEvents } from "./climbEvents";
 import "./ClimbView.css";
 
 interface ClimbViewProps {
@@ -11,13 +12,6 @@ interface ClimbViewProps {
 // True-probability ticks, printed where they fall on the sqrt scale.
 const Y_TICKS = [0, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0];
 const MAX_LINES = 6;
-
-// A token counts as a "serious contender" if it finishes within this fraction
-// of the winner's final probability and clears a small floor. Drives who the
-// reader should read as "almost won".
-const CONTENDER_RATIO = 0.4;
-const CONTENDER_FLOOR = 0.01;
-const MAX_CONTENDERS = 3;
 
 const disp = (t: string) => t.replace(/^ /, "·"); // show leading BPE space
 const pct = d3.format(".1%");
@@ -83,18 +77,9 @@ export default function ClimbView({ result }: ClimbViewProps) {
       .attr("text-anchor", "middle")
       .text("probability (√ scale)");
 
-    // --- Tiers (by final-layer probability) ---
-    const byFinal = [...trajectories].sort((a, b) => b.finalProb - a.finalProb);
-    const winner = byFinal[0];
-    const contenders = byFinal
-      .slice(1)
-      .filter(
-        (t) =>
-          winner != null &&
-          t.finalProb >= winner.finalProb * CONTENDER_RATIO &&
-          t.finalProb >= CONTENDER_FLOOR,
-      )
-      .slice(0, MAX_CONTENDERS);
+    // --- Events: single source of truth for tiers and nodes (see climbEvents) ---
+    const events = deriveClimbEvents(trajectories);
+    const { winner, contenders } = events;
     const labelled = new Set<string>([winner?.token, ...contenders.map((t) => t.token)].filter(Boolean) as string[]);
 
     // Drawn set: always the winner + contenders, then fill with high-peak lines.
@@ -173,6 +158,26 @@ export default function ClimbView({ result }: ClimbViewProps) {
         .attr("y", it.ly)
         .attr("dominant-baseline", "middle")
         .text(`${disp(it.token)}  ${pct(it.final)}`);
+    }
+
+    // --- Event nodes: the single decisive moment (crossover or collapse) ---
+    const nodeG = g.append("g").attr("class", "climb-nodes");
+    for (const ev of events.nodes) {
+      const cx = x(ev.layer);
+      const cy = y(ev.prob);
+      nodeG
+        .append("circle")
+        .attr("class", "climb-node")
+        .attr("cx", cx)
+        .attr("cy", cy)
+        .attr("r", 4.5);
+      nodeG
+        .append("text")
+        .attr("class", "climb-nodelabel")
+        .attr("x", cx)
+        .attr("y", cy - 10)
+        .attr("text-anchor", "middle")
+        .text(ev.label);
     }
   }, [result]);
 

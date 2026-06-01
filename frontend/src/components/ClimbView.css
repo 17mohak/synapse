@@ -117,3 +117,16 @@
   color: var(--accent);
   font-weight: 600;
 }
+
+/* Event node: a ring on the winner's line at the decisive moment. */
+.climb-node {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.climb-nodelabel {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--muted);
+}
