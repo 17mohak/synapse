@@ -39,6 +39,66 @@ export interface ClimbEvents {
 }
 
 const asPct = (p: number) => `${Math.round(p * 100)}%`;
+const prose = (t: string) => t.trim(); // token as a word, no leading-space dot
+const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+const WAYS = ["", "one", "two", "three", "four", "five", "six"];
+const waysWord = (n: number) => WAYS[n] ?? String(n);
+
+// Below this final probability the top token is not a meaningful prediction; we
+// say so rather than narrate a winner.
+const FLAT_FINAL = 0.02;
+
+/**
+ * The thesis: a one- or two-sentence observation in a researcher's voice,
+ * generated entirely from the event core so the words can never disagree with
+ * the chart. Handles clean wins, near-misses, collapses, hedges, lead-from-start
+ * runs, and flat/unresolved finishes; when it cannot classify confidently it
+ * states the ambiguity instead of forcing a narrative.
+ */
+export function composeThesis(ev: ClimbEvents): string {
+  const w = ev.winner;
+  const W = prose(w.token);
+  const finalPct = asPct(w.finalProb);
+  const leadLayer = ev.leadTakenLayer;
+
+  // 1. Collapse: the model was confident, then gave most of it back.
+  if (ev.collapse) {
+    const head = `The model briefly commits to ${W} at layer ${w.peakLayer} (${asPct(w.peak)}), but confidence collapses`;
+    return ev.hedge
+      ? `${head} and the run ends in a ${waysWord(ev.ways)}-way hedge.`
+      : `${head}, finishing at just ${finalPct}.`;
+  }
+
+  // 2. Hedge: several near-equal finishers, none separates.
+  if (ev.hedge) {
+    return `No single candidate separates: the run ends in a ${waysWord(ev.ways)}-way hedge near ${finalPct}, led narrowly by ${W}.`;
+  }
+
+  // 3. Flat finish: honesty over forced narrative.
+  if (w.finalProb < FLAT_FINAL) {
+    return `No clear prediction forms: the final distribution stays flat, with ${cap(W)} only narrowly on top at ${finalPct}.`;
+  }
+
+  const runnerFinal = ev.contenders[0]?.finalProb ?? 0;
+  const decisive = w.finalProb >= 0.1 && w.finalProb >= 2 * runnerFinal;
+
+  // 4. Near-miss: a genuinely close contest the winner holds (not a decisive win
+  //    that merely happens to have one runner-up).
+  if (ev.nearMiss && !decisive) {
+    const C = cap(prose(ev.contenders[0].token));
+    return `${cap(W)} takes the lead at layer ${leadLayer} and remains ahead through the final layers. ${C} closes the gap but never overtakes.`;
+  }
+
+  // 5. A win. Distinguish lead-from-start vs a real crossover, decisive vs narrow.
+  if (leadLayer <= 1) {
+    return decisive
+      ? `${cap(W)} leads from the opening layers and finishes at ${finalPct}, never seriously challenged.`
+      : `${cap(W)} leads throughout but only reaches ${finalPct} by the final layer.`;
+  }
+  return decisive
+    ? `${cap(W)} takes the lead at layer ${leadLayer} and pulls clearly ahead, finishing at ${finalPct}.`
+    : `${cap(W)} edges ahead at layer ${leadLayer} and holds a narrow lead, finishing at ${finalPct}.`;
+}
 
 export function deriveClimbEvents(trajectories: TokenTrajectory[]): ClimbEvents {
   const n = trajectories[0]?.probs.length ?? 0;

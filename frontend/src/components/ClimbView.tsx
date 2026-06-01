@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
 
 import type { AnalyzeResponse, TokenTrajectory } from "../api/client";
-import { deriveClimbEvents } from "./climbEvents";
+import { deriveClimbEvents, composeThesis } from "./climbEvents";
 import "./ClimbView.css";
 
 interface ClimbViewProps {
@@ -16,14 +16,18 @@ const MAX_LINES = 6;
 const disp = (t: string) => t.replace(/^ /, "·"); // show leading BPE space
 const pct = d3.format(".1%");
 
-// M4: name the lines. Tiers are driven by final-layer probability (the race
-// outcome), not by peak, so transient early spikes stay background. The winner
-// (model's actual prediction) gets the amber leader emphasis; serious
-// contenders are labelled in neutral ink; background candidates recede and are
-// left unlabelled. Endpoint labels are de-collided vertically. No crossover
-// nodes, entropy ribbon, playhead, scrubber, or motion yet.
+// The Race. A data-derived thesis sentence (the highest-value text in the view)
+// leads; the chart is its supporting evidence. Lines are tiered by final-layer
+// probability (amber winner, neutral contenders, faint background), labelled at
+// their endpoints with de-collision, and the single decisive event is ringed.
+// Thesis and chart both read from the same climbEvents derivation, so they can
+// never disagree. No entropy ribbon, playhead, scrubber, or motion yet.
 export default function ClimbView({ result }: ClimbViewProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Single derivation for both the thesis (rendered in JSX) and the D3 chart.
+  const events = useMemo(() => deriveClimbEvents(result.trajectories), [result]);
+  const thesis = events.winner ? composeThesis(events) : null;
 
   useEffect(() => {
     const svg = d3.select(svgRef.current);
@@ -77,8 +81,7 @@ export default function ClimbView({ result }: ClimbViewProps) {
       .attr("text-anchor", "middle")
       .text("probability (√ scale)");
 
-    // --- Events: single source of truth for tiers and nodes (see climbEvents) ---
-    const events = deriveClimbEvents(trajectories);
+    // --- Tiers + nodes from the shared event derivation (component body) ---
     const { winner, contenders } = events;
     const labelled = new Set<string>([winner?.token, ...contenders.map((t) => t.token)].filter(Boolean) as string[]);
 
@@ -179,17 +182,17 @@ export default function ClimbView({ result }: ClimbViewProps) {
         .attr("text-anchor", "middle")
         .text(ev.label);
     }
-  }, [result]);
+  }, [result, events]);
 
   return (
     <section className="climb" aria-label="The Climb">
       <header className="climb__head">
-        <h2 className="climb__title">The Climb</h2>
-        <p className="climb__caption">
-          Each line is one candidate next token, by layer. The{" "}
+        {thesis && <h2 className="climb__thesis">{thesis}</h2>}
+        <p className="climb__scalenote">
+          Each line is one candidate next token by layer, on a square-root probability
+          scale (ticks mark true probabilities). The{" "}
           <span className="climb__amber">amber line</span> is the model&rsquo;s final
-          prediction; labelled lines are the serious contenders. Y is a square-root
-          probability scale (ticks mark true probabilities).
+          prediction.
         </p>
       </header>
       <div className="climb__plot">
