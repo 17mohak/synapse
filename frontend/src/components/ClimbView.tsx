@@ -17,8 +17,11 @@ const MAX_LINES = 6;
 const SWEEP_MS = 2600; // one steady pass through the layers
 
 const prose = (t: string) => t.trim(); // the token as a word, for the verdict
-const VERDICT_FOCAL = 34; // winner word size (viewBox units)
-const VERDICT_MIN = 14; // floor so small rivals stay readable
+// The winner is present, not shouting: the gap (the moat) is the hero, not the
+// word size. Rivals shrink by how probable they are relative to the winner.
+const WINNER_SIZE = 31; // winning word size (viewBox units)
+const RIVAL_MAX = 25;
+const RIVAL_MIN = 15; // floor so small rivals stay readable
 
 // The Race. The scene is built once per analysis (so lines are never recreated,
 // reordered, or made to jump). A single applyLayer(frontier) drives everything
@@ -57,12 +60,13 @@ export default function ClimbView({ result }: ClimbViewProps) {
     const globalPeak = d3.max(trajectories, (t) => t.peak) ?? 1;
     const yMax = Math.min(1, globalPeak * 1.02);
 
-    const width = 920;
-    const margin = { top: 20, right: 150, bottom: 48, left: 56 };
+    // The standing lives on the chart's own probability axis: the trajectories
+    // resolve into large words at their final-layer height, and the empty gap
+    // between the winner and its nearest rival — the moat — is the hero. The
+    // right margin holds those words, so it is wide.
+    const width = 1000;
+    const margin = { top: 24, right: 292, bottom: 48, left: 56 };
     const innerW = width - margin.left - margin.right;
-    // The entropy ribbon is gone (its story — the model's doubt — is now told by
-    // the verdict's moat). The race grows into the reclaimed space so the
-    // trajectories breathe and the winner's standing has room to read.
     const innerH = 452;
     const svgHeight = margin.top + innerH + margin.bottom;
 
@@ -72,7 +76,9 @@ export default function ClimbView({ result }: ClimbViewProps) {
     const x = d3.scaleLinear().domain([0, last]).range([0, innerW]);
     const y = d3.scaleSqrt().domain([0, yMax]).range([innerH, 0]);
 
-    // Axes.
+    // Axes, kept to a Tufte whisper: faint reference lines carry the probability
+    // meaning the moat depends on, nothing more. The rotated y-label is gone; a
+    // small disclosure sits top-left instead, and the lines never compete.
     const yg = g
       .append("g")
       .attr("class", "climb-axis")
@@ -89,10 +95,15 @@ export default function ClimbView({ result }: ClimbViewProps) {
     xg.selectAll(".tick line").attr("y2", 4);
 
     g.append("text").attr("class", "climb__axislabel").attr("x", innerW / 2).attr("y", innerH + 38).attr("text-anchor", "middle").text("layer");
-    g.append("text").attr("class", "climb__axislabel").attr("transform", "rotate(-90)").attr("x", -innerH / 2).attr("y", -42).attr("text-anchor", "middle").text("probability (√ scale)");
+    g.append("text").attr("class", "climb__axisnote").attr("x", 0).attr("y", -10).text("probability · √ scale");
 
     // Tiers + drawn set (winner + contenders, then high-peak fill).
     const { winner, contenders } = events;
+    // Did the winner clearly separate? (Same test composeThesis uses for "pulls
+    // clearly ahead".) Drives both the rest-state line dimming and whether the
+    // moat is drawn as a real lead or as a "no separation" hedge.
+    const runnerFinal = contenders[0]?.finalProb ?? 0;
+    const decisive = !!winner && winner.finalProb >= 0.1 && winner.finalProb >= 2 * runnerFinal;
     const labelled = new Set<string>([winner?.token, ...contenders.map((t) => t.token)].filter(Boolean) as string[]);
     const drawn: TokenTrajectory[] = [winner, ...contenders].filter(Boolean) as TokenTrajectory[];
     for (const t of [...trajectories].sort((a, b) => b.peak - a.peak)) {
@@ -122,42 +133,76 @@ export default function ClimbView({ result }: ClimbViewProps) {
       .attr("class", (d) => `climb-line climb-line--solid climb-line--${tierOf(d)}`)
       .attr("d", (d) => line(d.probs));
 
-    // The verdict, "The Standing": the winner and the rivals the model still
-    // entertains, placed on an implicit probability axis (higher = more probable).
-    // The empty gap beneath the winner is the model's confidence; a rival pressed
-    // against it is its doubt. This replaces the endpoint labels and is the answer
-    // to "did it know?". (Static at the final layer for r1; animated later.)
+    // The Standing. The trajectories resolve into words at their true final-layer
+    // height on the SAME probability axis as the chart (so the chart and verdict
+    // are one object). The hero is the moat: the empty span between the winner's
+    // endpoint and its nearest rival's, on the real axis, labelled with the lead.
+    // Words are de-collided only enough to stay legible and each is tied back to
+    // its true endpoint by a faint connector, so the gap never lies.
     const verdict = deriveVerdict(trajectories);
-    const winnerProb = verdict[0]?.finalProb || 1;
-    const yV = d3.scaleLinear().domain([0, winnerProb]).range([innerH - 8, 16]);
+    const wordX = innerW + 110; // left edge of the words (clears the moat label)
     const vItems = verdict.map((c) => ({
       token: prose(c.token),
       isWinner: c.isWinner,
-      size: c.isWinner ? VERDICT_FOCAL : Math.max(VERDICT_MIN, VERDICT_FOCAL * c.ratio),
-      vy: yV(c.finalProb),
+      size: c.isWinner ? WINNER_SIZE : Math.max(RIVAL_MIN, Math.min(RIVAL_MAX, WINNER_SIZE * c.ratio)),
+      trueY: y(c.finalProb), // honest position on the axis (for endpoints + moat)
+      wy: y(c.finalProb), // rendered baseline (de-collided below)
     }));
-    // De-collide downward: where probabilities are close (a hedge) the words pack
-    // tight; where the winner dominates (it knew) the natural gap is preserved.
+    // De-collide downward for legibility, leaving the true endpoints untouched.
     let prevBottom = -Infinity;
     for (const it of vItems) {
-      const gap = it.size * 0.92;
-      it.vy = Math.max(it.vy, prevBottom + gap);
-      prevBottom = it.vy;
+      const gap = it.size * 0.96;
+      it.wy = Math.max(it.wy, prevBottom + gap);
+      prevBottom = it.wy;
     }
-    const verdictX = innerW + margin.right - 8; // right edge of the right margin
+
     const vg = g.append("g").attr("class", "climb-verdict");
+    // Endpoint dots + connectors from each true axis position to its word.
+    for (const it of vItems) {
+      vg.append("circle")
+        .attr("class", it.isWinner ? "climb-verdict__dot climb-verdict__dot--winner" : "climb-verdict__dot")
+        .attr("cx", innerW).attr("cy", it.trueY).attr("r", it.isWinner ? 3.5 : 2.5);
+      vg.append("path")
+        .attr("class", "climb-verdict__connector")
+        .attr("d", `M${innerW},${it.trueY} L${wordX - 8},${it.wy}`);
+    }
+    // The words themselves.
     for (const it of vItems) {
       vg.append("text")
         .attr("class", it.isWinner ? "climb-verdict__word climb-verdict__word--winner" : "climb-verdict__word")
-        .attr("x", verdictX)
-        .attr("y", it.vy)
-        .attr("text-anchor", "end")
+        .attr("x", wordX)
+        .attr("y", it.wy)
         .attr("dominant-baseline", "middle")
         .style("font-size", `${it.size}px`)
         .text(it.token);
     }
-    // A small amber marker where the winning line ends, anchoring the verdict.
-    vg.append("circle").attr("class", "climb-verdict__anchor").attr("cx", innerW).attr("cy", y(winnerProb)).attr("r", 3);
+
+    // The moat: the measured void between the winner and its nearest rival, drawn
+    // at their TRUE axis heights (honest), with the lead in points. A hedge never
+    // separates, so it gets "no separation" instead of a lead.
+    const moatX = innerW + 24;
+    if (winner && verdict[1] && !events.hedge) {
+      const yTop = y(winner.finalProb);
+      const yBot = y(verdict[1].finalProb);
+      const leadPts = Math.round((winner.finalProb - verdict[1].finalProb) * 100);
+      const moat = vg.append("g").attr("class", "climb-moat");
+      moat.append("line").attr("class", "climb-moat__rule").attr("x1", moatX).attr("x2", moatX).attr("y1", yTop).attr("y2", yBot);
+      for (const yy of [yTop, yBot]) {
+        moat.append("line").attr("class", "climb-moat__cap").attr("x1", moatX - 4).attr("x2", moatX + 4).attr("y1", yy).attr("y2", yy);
+      }
+      moat.append("text")
+        .attr("class", "climb-moat__label")
+        .attr("x", moatX + 9)
+        .attr("y", (yTop + yBot) / 2)
+        .attr("dominant-baseline", "middle")
+        .text(leadPts >= 1 ? `${leadPts}-pt lead` : "<1-pt lead");
+    } else if (winner && events.hedge) {
+      vg.append("text")
+        .attr("class", "climb-moat__label climb-moat__label--hedge")
+        .attr("x", moatX)
+        .attr("y", y(winner.finalProb) - 18)
+        .text(`no separation · ${events.ways}-way`);
+    }
 
     // Event nodes (decisive moment), hidden until the sweep reaches them.
     const nodeG = g.append("g").attr("class", "climb-nodes");
@@ -177,13 +222,6 @@ export default function ClimbView({ result }: ClimbViewProps) {
 
     const clip = svg.select<SVGRectElement>(".climb-clip");
     const igniteLayer = events.nodes[0]?.layer ?? null;
-
-    // Did the winner clearly separate? (Same test composeThesis uses for "pulls
-    // clearly ahead".) Only then do we quiet the also-rans once the race settles,
-    // so the lone answer reads. A hedge or near-miss never separates, so its
-    // crowd stays co-present at rest — the honest picture of "didn't know".
-    const runnerFinal = events.contenders[0]?.finalProb ?? 0;
-    const decisive = !!winner && winner.finalProb >= 0.1 && winner.finalProb >= 2 * runnerFinal;
 
     // The one function that maps a (possibly fractional) layer to the whole scene.
     const applyLayer = (frontier: number) => {

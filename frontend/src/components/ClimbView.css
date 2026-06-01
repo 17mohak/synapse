@@ -66,16 +66,24 @@
   stroke: var(--border-strong);
 }
 
-/* Faint full-width horizontal reference lines = the chart frame. */
+/* Faint full-width horizontal reference lines = the chart frame. Low-ink so the
+   standing and its moat keep the eye (Tufte). */
 .climb-grid {
   stroke: var(--border);
-  stroke-opacity: 0.35;
+  stroke-opacity: 0.2;
 }
 
 .climb__axislabel {
   fill: var(--muted);
   font-family: var(--font-ui);
   font-size: 12px;
+}
+
+/* Quiet top-left disclosure of the scale, replacing the rotated y-label. */
+.climb__axisnote {
+  fill: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
 }
 
 /* Trajectory lines, tiered by final-layer probability. Each is drawn as a faint
@@ -197,13 +205,13 @@ text.climb-tick--active {
   font-weight: 600;
 }
 
-/* The verdict ("The Standing"): the answer over its rivals, placed by
-   probability. The winner is amber; rivals are neutral and sized by how
-   probable they are relative to it. The gap beneath the winner = confidence. */
+/* The Standing: the trajectories resolve into words at their true final-layer
+   height on the chart's own axis. The winner is amber; rivals are neutral and
+   sized by how probable they are relative to it. */
 .climb-verdict__word {
   font-family: var(--font-mono);
   fill: var(--ink);
-  fill-opacity: 0.8;
+  fill-opacity: 0.62;
   letter-spacing: -0.01em;
 }
 
@@ -213,8 +221,41 @@ text.climb-tick--active {
   font-weight: 600;
 }
 
-.climb-verdict__anchor {
+/* Endpoint dots + faint connectors tie each word back to its true probability on
+   the axis, so the de-collided word never misrepresents the gap. */
+.climb-verdict__dot {
+  fill: var(--ink);
+  fill-opacity: 0.5;
+}
+.climb-verdict__dot--winner {
   fill: var(--accent);
+  fill-opacity: 1;
+}
+.climb-verdict__connector {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.18;
+  stroke-width: 1;
+}
+
+/* The moat: the measured void between the winner and its nearest rival, drawn at
+   their true axis heights. The amber rule + caps bound the emptiness; the label
+   quantifies the lead. This is the thing the eye is meant to remember. */
+.climb-moat__rule,
+.climb-moat__cap {
+  stroke: var(--accent);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+}
+.climb-moat__label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  fill: var(--accent);
+  fill-opacity: 0.9;
+}
+.climb-moat__label--hedge {
+  fill: var(--muted);
+  fill-opacity: 0.85;
 }
 
 /* Event node: a ring on the winner's line at the decisive moment. The group

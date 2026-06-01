@@ -11,8 +11,8 @@ interface ClimbScrubberProps {
 // underneath gives drag, click, touch, and keyboard (arrows / Home / End) plus
 // the slider ARIA role for free. Aligned to the chart's plot area so the cursor
 // sits under the same layer on the X axis (margins mirror ClimbView).
-const PLOT_LEFT = `${(56 / 920) * 100}%`; // ClimbView margin.left / viewBox width
-const PLOT_RIGHT = `${(150 / 920) * 100}%`; // ClimbView margin.right / viewBox width
+const PLOT_LEFT = `${(56 / 1000) * 100}%`; // ClimbView margin.left / viewBox width
+const PLOT_RIGHT = `${(292 / 1000) * 100}%`; // ClimbView margin.right / viewBox width
 
 export default function ClimbScrubber({ result }: ClimbScrubberProps) {
   const playheadLayer = useStore((s) => s.playheadLayer);
