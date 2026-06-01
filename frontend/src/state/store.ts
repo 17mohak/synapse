@@ -46,8 +46,17 @@ export const useStore = create<SynapseState>((set) => ({
     set({ status: "loading", error: null, selectedLayer: null });
     try {
       const result = await analyze(trimmed);
-      // Rest the playhead at the final, resolved layer for each new analysis.
-      set({ status: "ready", result, analyzedPrompt: trimmed, playheadLayer: LAST_LAYER });
+      // A new analysis begins in the sweeping state so the very first render is
+      // not a stale "idle" frame: that frame would otherwise reveal the thesis
+      // early and let the scrub effect override the sweep's opening. ClimbView's
+      // build effect flips this back to idle immediately under reduced motion.
+      set({
+        status: "ready",
+        result,
+        analyzedPrompt: trimmed,
+        playheadLayer: LAST_LAYER,
+        playState: "sweeping",
+      });
     } catch (err) {
       const message =
         err instanceof ApiError

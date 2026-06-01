@@ -9,9 +9,11 @@
   margin-bottom: 16px;
 }
 
-/* The thesis: the highest-value text in the view. The first thing read, the
-   finding the chart then supports. */
+/* The thesis: now the payoff, not the premise. It sits below the chart and
+   lands once the race has resolved (revealed), confirming the standing. */
 .climb__thesis {
+  margin: 18px 0 0;
+  min-height: 1.35em; /* reserve space so the layout doesn't jump on reveal */
   max-width: 72ch;
   color: var(--ink);
   font-size: var(--text-lg);
@@ -19,6 +21,20 @@
   line-height: 1.35;
   letter-spacing: -0.01em;
   text-wrap: balance;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 380ms var(--ease-out), transform 380ms var(--ease-out);
+}
+
+.climb__thesis--revealed {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .climb__thesis {
+    transform: none;
+  }
 }
 
 /* Scale disclosure + legend, deliberately quiet beneath the thesis. */

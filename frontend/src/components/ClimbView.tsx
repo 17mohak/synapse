@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 
 import type { AnalyzeResponse, TokenTrajectory } from "../api/client";
@@ -38,6 +38,13 @@ export default function ClimbView({ result }: ClimbViewProps) {
 
   const events = useMemo(() => deriveClimbEvents(result.trajectories), [result]);
   const thesis = events.winner ? composeThesis(events) : null;
+
+  // The thesis is confirmation, not a spoiler: it stays hidden through the sweep
+  // and lands once the race has resolved. Keyed on the result object so a new
+  // analysis hides it again with no spoiler flash (computed during render, so it
+  // is already false before the rebuild effect runs).
+  const [revealedResult, setRevealedResult] = useState<AnalyzeResponse | null>(null);
+  const revealed = revealedResult === result;
 
   // --- Effect A: build the scene once, then sweep (or render resolved). ---
   useEffect(() => {
@@ -232,13 +239,18 @@ export default function ClimbView({ result }: ClimbViewProps) {
 
   // --- Effect B: manual scrub (only when the sweep is not running). ---
   useEffect(() => {
-    if (playState !== "sweeping") applyRef.current?.(playheadLayer);
-  }, [playheadLayer, playState]);
+    if (playState !== "sweeping") {
+      applyRef.current?.(playheadLayer);
+      // Settled (sweep finished, reduced motion, or manual control taken): the
+      // race has resolved, so the confirming thesis may land. Setting the same
+      // value is a no-op, so this is cheap to call on every scrub tick.
+      setRevealedResult(result);
+    }
+  }, [playheadLayer, playState, result]);
 
   return (
     <section className="climb" aria-label="The Climb">
       <header className="climb__head">
-        {thesis && <h2 className="climb__thesis">{thesis}</h2>}
         <p className="climb__scalenote">
           Each line is one candidate next token by layer, on a square-root probability
           scale (ticks mark true probabilities). The{" "}
@@ -254,6 +266,15 @@ export default function ClimbView({ result }: ClimbViewProps) {
           aria-label="Logit-lens probability trajectories across layers, with the winning and contending tokens labelled"
         />
       </div>
+      {/* The thesis is the payoff, not the premise: it stays hidden through the
+          sweep and arrives once the race resolves, confirming what the standing
+          already showed. aria-live announces it for screen readers. */}
+      <p
+        className={`climb__thesis${revealed ? " climb__thesis--revealed" : ""}`}
+        aria-live="polite"
+      >
+        {revealed && thesis ? thesis : ""}
+      </p>
       <ClimbScrubber result={result} />
       <ClimbReadout result={result} />
     </section>
