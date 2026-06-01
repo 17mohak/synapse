@@ -39,12 +39,13 @@ export default function ClimbView({ result }: ClimbViewProps) {
     const yMax = Math.min(1, globalPeak * 1.02);
 
     const width = 920;
-    const height = 460;
+    const chartHeight = 460;
+    const svgHeight = 556; // chart + the entropy ribbon below it
     const margin = { top: 20, right: 150, bottom: 44, left: 56 };
     const innerW = width - margin.left - margin.right;
-    const innerH = height - margin.top - margin.bottom;
+    const innerH = chartHeight - margin.top - margin.bottom;
 
-    svg.attr("viewBox", `0 0 ${width} ${height}`);
+    svg.attr("viewBox", `0 0 ${width} ${svgHeight}`);
     const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
 
     const x = d3.scaleLinear().domain([0, nLayers - 1]).range([0, innerW]);
@@ -182,6 +183,69 @@ export default function ClimbView({ result }: ClimbViewProps) {
         .attr("text-anchor", "middle")
         .text(ev.label);
     }
+
+    // --- Entropy ribbon: a second, quiet channel. The Race answers "what does
+    // the model believe?"; this answers "how certain is it?". Raw per-layer
+    // entropy (bits) on a fixed 0..log2(vocab) domain so spikes stay honest and
+    // comparable across prompts; deliberately not normalised or smoothed. ---
+    // Fixed, comparable ceiling. The theoretical max is log2(vocab) ≈ 15.6, but
+    // GPT-2 small's per-layer entropy never approaches it (observed ≲ 9.5 bits),
+    // so a fixed 10-bit reference keeps the shape legible while the printed end
+    // value stays exact. Fixed (not per-prompt) so spikes stay honest.
+    const MAX_ENTROPY = 10;
+    const entropy = result.entropy ?? [];
+    const ribbonTop = innerH + 38 + 26; // below the "layer" axis label
+    const ribbonH = 52;
+    const ribbonBase = ribbonTop + ribbonH;
+    const entY = d3.scaleLinear().domain([0, MAX_ENTROPY]).range([ribbonBase, ribbonTop]).clamp(true);
+
+    const ribbon = g.append("g").attr("class", "climb-ribbon");
+    ribbon
+      .append("line")
+      .attr("class", "climb-ribbon__base")
+      .attr("x1", 0)
+      .attr("x2", innerW)
+      .attr("y1", ribbonBase)
+      .attr("y2", ribbonBase);
+    ribbon
+      .append("path")
+      .datum(entropy)
+      .attr("class", "climb-ribbon__area")
+      .attr(
+        "d",
+        d3
+          .area<number>()
+          .x((_d, i) => x(i))
+          .y0(ribbonBase)
+          .y1((d) => entY(d))
+          .curve(d3.curveMonotoneX),
+      );
+    ribbon
+      .append("path")
+      .datum(entropy)
+      .attr("class", "climb-ribbon__line")
+      .attr(
+        "d",
+        d3
+          .line<number>()
+          .x((_d, i) => x(i))
+          .y((d) => entY(d))
+          .curve(d3.curveMonotoneX),
+      );
+    ribbon
+      .append("text")
+      .attr("class", "climb-ribbon__label")
+      .attr("x", 0)
+      .attr("y", ribbonTop - 6)
+      .text("uncertainty (bits)");
+    const lastE = entropy[entropy.length - 1] ?? 0;
+    ribbon
+      .append("text")
+      .attr("class", "climb-ribbon__end")
+      .attr("x", innerW + 8)
+      .attr("y", entY(lastE))
+      .attr("dominant-baseline", "middle")
+      .text(lastE.toFixed(1));
   }, [result, events]);
 
   return (
