@@ -7,12 +7,12 @@ import "./App.css";
 function EmptyState() {
   return (
     <div className="empty">
-      <h2 className="empty__title">Watch a transformer think.</h2>
+      <h2 className="empty__title">Watch a transformer think. Then see if it knew.</h2>
       <p className="empty__body">
-        Type a factual prompt and run a real GPT-2 small forward pass. The logit lens
-        reads the model&rsquo;s top guess for the next token out of the residual stream
-        at each of its 12 layers, so you can watch the answer assemble itself layer by
-        layer. Try an example to start.
+        Run a real GPT-2 small forward pass and watch its next-token prediction form,
+        layer by layer. When the race resolves, the gap between the answer and its
+        nearest rival (the moat) shows how sure the model really was. Try an example to
+        start.
       </p>
     </div>
   );
