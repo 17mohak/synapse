@@ -169,6 +169,26 @@ text.climb-tick--active {
   font-weight: 600;
 }
 
+/* The verdict ("The Standing"): the answer over its rivals, placed by
+   probability. The winner is amber; rivals are neutral and sized by how
+   probable they are relative to it. The gap beneath the winner = confidence. */
+.climb-verdict__word {
+  font-family: var(--font-mono);
+  fill: var(--ink);
+  fill-opacity: 0.8;
+  letter-spacing: -0.01em;
+}
+
+.climb-verdict__word--winner {
+  fill: var(--accent);
+  fill-opacity: 1;
+  font-weight: 600;
+}
+
+.climb-verdict__anchor {
+  fill: var(--accent);
+}
+
 /* Event node: a ring on the winner's line at the decisive moment. The group
    fades in exactly when the sweep reaches that layer. */
 .climb-nodes {

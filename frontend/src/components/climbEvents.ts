@@ -39,6 +39,40 @@ export interface ClimbEvents {
 }
 
 const asPct = (p: number) => `${Math.round(p * 100)}%`;
+
+/** One token in the verdict tableau ("The Standing"). */
+export interface VerdictCandidate {
+  token: string;
+  finalProb: number;
+  ratio: number; // finalProb relative to the winner (winner = 1)
+  isWinner: boolean;
+}
+
+/**
+ * The verdict: the winning token plus the rivals the model still entertains at
+ * the final layer (those finishing at >= `ratioFloor` of the winner, capped).
+ * The reader's question is "did it know?" — answered by the gap between the
+ * winner and its nearest rival, which these candidates' probabilities define.
+ */
+export function deriveVerdict(
+  trajectories: TokenTrajectory[],
+  maxResidue = 5,
+  ratioFloor = 0.15,
+): VerdictCandidate[] {
+  const byFinal = [...trajectories].sort((a, b) => b.finalProb - a.finalProb);
+  const winner = byFinal[0];
+  if (!winner) return [];
+  const out: VerdictCandidate[] = [
+    { token: winner.token, finalProb: winner.finalProb, ratio: 1, isWinner: true },
+  ];
+  for (const t of byFinal.slice(1)) {
+    if (out.length - 1 >= maxResidue) break;
+    const ratio = winner.finalProb > 0 ? t.finalProb / winner.finalProb : 0;
+    if (ratio < ratioFloor) break;
+    out.push({ token: t.token, finalProb: t.finalProb, ratio, isWinner: false });
+  }
+  return out;
+}
 const prose = (t: string) => t.trim(); // token as a word, no leading-space dot
 const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 const WAYS = ["", "one", "two", "three", "four", "five", "six"];

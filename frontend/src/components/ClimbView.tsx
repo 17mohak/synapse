@@ -3,7 +3,7 @@ import * as d3 from "d3";
 
 import type { AnalyzeResponse, TokenTrajectory } from "../api/client";
 import { useStore } from "../state/store";
-import { deriveClimbEvents, composeThesis } from "./climbEvents";
+import { deriveClimbEvents, composeThesis, deriveVerdict } from "./climbEvents";
 import ClimbScrubber from "./ClimbScrubber";
 import ClimbReadout from "./ClimbReadout";
 import "./ClimbView.css";
@@ -17,8 +17,9 @@ const MAX_LINES = 6;
 const MAX_ENTROPY = 10; // fixed, comparable ribbon ceiling (see m6)
 const SWEEP_MS = 2600; // one steady pass through the layers
 
-const disp = (t: string) => t.replace(/^ /, "·");
-const pct = d3.format(".1%");
+const prose = (t: string) => t.trim(); // the token as a word, for the verdict
+const VERDICT_FOCAL = 34; // winner word size (viewBox units)
+const VERDICT_MIN = 14; // floor so small rivals stay readable
 
 // The Race. The scene is built once per analysis (so lines are never recreated,
 // reordered, or made to jump). A single applyLayer(frontier) drives everything
@@ -130,26 +131,42 @@ export default function ClimbView({ result }: ClimbViewProps) {
     const lastE = entropy[entropy.length - 1] ?? 0;
     g.append("text").attr("class", "climb-ribbon__end").attr("x", innerW + 8).attr("y", entY(lastE)).attr("dominant-baseline", "middle").text(lastE.toFixed(1));
 
-    // Endpoint labels (winner + contenders), de-collided.
-    const labelItems = [winner, ...contenders].filter(Boolean).map((t) => ({
-      token: (t as TokenTrajectory).token,
-      tier: tierOf(t as TokenTrajectory),
-      final: (t as TokenTrajectory).finalProb,
-      y0: y((t as TokenTrajectory).finalProb),
-      ly: y((t as TokenTrajectory).finalProb),
+    // The verdict, "The Standing": the winner and the rivals the model still
+    // entertains, placed on an implicit probability axis (higher = more probable).
+    // The empty gap beneath the winner is the model's confidence; a rival pressed
+    // against it is its doubt. This replaces the endpoint labels and is the answer
+    // to "did it know?". (Static at the final layer for r1; animated later.)
+    const verdict = deriveVerdict(trajectories);
+    const winnerProb = verdict[0]?.finalProb || 1;
+    const yV = d3.scaleLinear().domain([0, winnerProb]).range([innerH - 8, 16]);
+    const vItems = verdict.map((c) => ({
+      token: prose(c.token),
+      isWinner: c.isWinner,
+      size: c.isWinner ? VERDICT_FOCAL : Math.max(VERDICT_MIN, VERDICT_FOCAL * c.ratio),
+      vy: yV(c.finalProb),
     }));
-    const MIN_GAP = 15;
-    labelItems.sort((a, b) => a.ly - b.ly);
-    let lastLy = -Infinity;
-    for (const it of labelItems) { it.ly = Math.max(it.ly, lastLy + MIN_GAP); lastLy = it.ly; }
-    const overflow = lastLy - innerH;
-    if (overflow > 0) for (const it of labelItems) it.ly -= overflow;
-    const labels = g.append("g").attr("class", "climb-labels");
-    for (const it of labelItems) {
-      labels.append("circle").attr("class", `climb-dot climb-dot--${it.tier}`).attr("cx", innerW).attr("cy", it.y0).attr("r", it.tier === "winner" ? 3 : 2.25);
-      if (Math.abs(it.ly - it.y0) > 1) labels.append("path").attr("class", "climb-connector").attr("d", `M${innerW},${it.y0} L${innerW + 8},${it.ly}`);
-      labels.append("text").attr("class", `climb-label climb-label--${it.tier}`).attr("x", innerW + 12).attr("y", it.ly).attr("dominant-baseline", "middle").text(`${disp(it.token)}  ${pct(it.final)}`);
+    // De-collide downward: where probabilities are close (a hedge) the words pack
+    // tight; where the winner dominates (it knew) the natural gap is preserved.
+    let prevBottom = -Infinity;
+    for (const it of vItems) {
+      const gap = it.size * 0.92;
+      it.vy = Math.max(it.vy, prevBottom + gap);
+      prevBottom = it.vy;
     }
+    const verdictX = innerW + margin.right - 8; // right edge of the right margin
+    const vg = g.append("g").attr("class", "climb-verdict");
+    for (const it of vItems) {
+      vg.append("text")
+        .attr("class", it.isWinner ? "climb-verdict__word climb-verdict__word--winner" : "climb-verdict__word")
+        .attr("x", verdictX)
+        .attr("y", it.vy)
+        .attr("text-anchor", "end")
+        .attr("dominant-baseline", "middle")
+        .style("font-size", `${it.size}px`)
+        .text(it.token);
+    }
+    // A small amber marker where the winning line ends, anchoring the verdict.
+    vg.append("circle").attr("class", "climb-verdict__anchor").attr("cx", innerW).attr("cy", y(winnerProb)).attr("r", 3);
 
     // Event nodes (decisive moment), hidden until the sweep reaches them.
     const nodeG = g.append("g").attr("class", "climb-nodes");
@@ -180,9 +197,6 @@ export default function ClimbView({ result }: ClimbViewProps) {
       const ignited = igniteLayer == null || f >= igniteLayer - 1e-6;
       revealG.classed("is-ignited", ignited);
       nodeG.style("opacity", ignited ? 1 : 0);
-
-      const atRest = last - f < 1e-6;
-      labels.attr("opacity", atRest ? 1 : 0.5);
 
       const li = Math.round(f);
       xg.selectAll<SVGGElement, number>(".tick").classed("climb-tick--active", (d) => d === li);
