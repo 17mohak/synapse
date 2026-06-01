@@ -9,7 +9,7 @@ picture called **The Race** — and then asks the question that actually matters
 
 > Not *"what word won?"* but **"did the model actually know?"**
 
-![The Race resolving on a decisive prompt: oxygen pulls clearly ahead and stands alone above a wide moat.](docs/climb-water.png)
+![The Race resolving on a decisive prompt: oxygen stands alone above a wide, measured moat labelled a 29-point lead.](docs/climb-water.png)
 
 ---
 
@@ -25,20 +25,24 @@ Synapse re-implements a real, citable interpretability technique — the logit l
 - **The forward pass becomes one motion.** A steady sweep reveals the layers left to right,
   so you watch the prediction *form* rather than reading a finished chart. The winning line
   ignites amber at the layer where it takes the lead.
-- **Doubt is physical, and honest.** The climax — *The Standing* — places the final
-  candidates on a probability axis. A confident model leaves its answer alone above a wide
-  empty **moat**; an unsure model leaves a rival pressed right beneath it. The visualization
-  never forces a clean "it knew" story when the data disagrees.
+- **Doubt is physical, measured, and honest.** When the race resolves, the trajectories
+  settle into *The Standing*: the candidates become words at their true final-layer height on
+  the chart's own axis. The hero is the **moat**, the empty span between the winner and its
+  nearest rival, drawn at their real probabilities and labelled with the lead in points. A
+  wide moat means the model knew; a near-zero moat means it only leaned; a packed crowd with
+  no moat means it never decided. The visualization never invents a gap the data doesn't have.
 
 GPT-2 small is genuinely weak, and Synapse shows that truthfully. The three regimes:
 
-| Prompt | What the model does | How The Standing reads it |
+| Prompt | What the model does | The moat |
 |---|---|---|
-| `Water is made of hydrogen and` | **Knew.** Oxygen pulls clearly ahead (48%). | Oxygen alone above a wide moat; the also-rans recede. |
-| `The Eiffel Tower is in the city of` | **Leaned, unsure.** London (8.1%) edges Paris (6.9%) — and it's *wrong*. | London on top with Paris a hair beneath; the field stays present. |
-| `The quick brown fox jumps over the lazy` | **Didn't know.** A flat four-way hedge. | A tight pack of near-equals; nothing separates. |
+| `Water is made of hydrogen and` | **Knew.** Oxygen pulls clearly ahead (48%). | A wide **29-pt** moat; oxygen stands alone, the also-rans recede. |
+| `The Eiffel Tower is in the city of` | **Leaned, unsure.** London (8.1%) edges Paris (6.9%), and it's *wrong*. | A **1-pt** moat; London a hair above Paris, the field stays present. |
+| `The quick brown fox jumps over the lazy` | **Didn't know.** A four-way hedge. | **No separation**; a tight pack of near-equals, no moat at all. |
 
-![The same view on a near-miss: London edges Paris by a thread, the field stays co-present.](docs/climb-eiffel.png)
+![A near-miss: London edges Paris by a single point, a near-zero moat, the field co-present.](docs/climb-eiffel.png)
+
+![A hedge: fox, brown, white and lazy packed together with no separation, no moat.](docs/climb-fox.png)
 
 ---
 
@@ -89,15 +93,17 @@ Frontend (Vite + React + TS, D3)  ──POST /api/analyze──▶  Backend (Fas
   per-layer probability **trajectories** for a tracked token set (`compute_trajectories`),
   and per-layer Shannon **entropy** in bits (`compute_entropy`). The unembed includes the
   bias `b_U`, so the final-layer lens reproduces the model's real logits to ~1e-5.
-- **Frontend.** `ClimbView.tsx` builds the D3 scene **once** per analysis (object constancy —
+- **Frontend.** `ClimbView.tsx` builds the D3 scene **once** per analysis (object constancy:
   lines are never recreated or reordered) and drives the whole picture from one value via
   `applyLayer(frontier)`: a clip reveals the trajectories up to the current layer, a playhead
-  tracks it, the winner ignites, and at rest the verdict (*The Standing*) settles. A √
-  probability scale keeps both early high-confidence spikes and the late low-probability race
-  visible. State lives in a small Zustand store.
-- **Honesty by construction.** The thesis sentence, the line-dimming at rest, and the verdict
-  are all derived from one shared event core (`climbEvents.ts`), gated on the same `decisive`
-  test — so the words and the chart can never disagree.
+  tracks it, the winner ignites, and at the final layer the trajectories resolve into *The
+  Standing*, the words and the measured moat blooming in on the chart's own √ probability
+  axis. That shared axis keeps early high-confidence spikes and the late low-probability race
+  both visible, and makes the moat an honest reading of the real gap. State lives in a small
+  Zustand store.
+- **Honesty by construction.** The thesis sentence, the line-dimming at rest, and the moat
+  (lead vs "no separation") are all derived from one shared event core (`climbEvents.ts`),
+  gated on the same `decisive` test, so the words and the chart can never disagree.
 
 ### Project layout
 
