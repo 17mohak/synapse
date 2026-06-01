@@ -84,8 +84,17 @@
   stroke-width: 1;
 }
 
-/* Solid (happened) opacity per tier. */
+/* Solid (revealed) opacity per tier. The winner starts neutral and ignites to
+   amber when the sweep reaches the decisive layer (the reveal group gains
+   .is-ignited), so you watch it *become* the answer rather than being told. */
 .climb-line--solid.climb-line--winner {
+  stroke: var(--ink);
+  stroke-opacity: 0.85;
+  transition: stroke 220ms var(--ease-out), stroke-opacity 220ms var(--ease-out),
+    stroke-width 220ms var(--ease-out);
+}
+.climb-reveal.is-ignited .climb-line--solid.climb-line--winner {
+  stroke: var(--accent);
   stroke-opacity: 1;
 }
 .climb-line--solid.climb-line--contender {
@@ -95,8 +104,10 @@
   stroke-opacity: 0.3;
 }
 
-/* Ghost (not yet, at this layer): faint for every tier. */
+/* Ghost (not yet revealed): uniform faint ink for every tier, so no tier colour
+   (and no amber) leaks ahead of the reveal. Defined after the tier rules to win. */
 .climb-line--ghost {
+  stroke: var(--ink);
   stroke-opacity: 0.12;
 }
 
@@ -158,7 +169,12 @@ text.climb-tick--active {
   font-weight: 600;
 }
 
-/* Event node: a ring on the winner's line at the decisive moment. */
+/* Event node: a ring on the winner's line at the decisive moment. The group
+   fades in exactly when the sweep reaches that layer. */
+.climb-nodes {
+  transition: opacity 200ms var(--ease-out);
+}
+
 .climb-node {
   fill: var(--bg);
   stroke: var(--accent);
@@ -177,6 +193,12 @@ text.climb-tick--active {
 .climb-ribbon__area {
   fill: var(--muted);
   fill-opacity: 0.16;
+}
+
+/* The faint "not yet traversed" entropy scaffold, beneath the reveal. */
+.climb-ribbon__area--ghost {
+  fill: var(--muted);
+  fill-opacity: 0.05;
 }
 
 .climb-ribbon__line {

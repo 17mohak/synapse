@@ -17,6 +17,7 @@ const PLOT_RIGHT = `${(150 / 920) * 100}%`; // ClimbView margin.right / viewBox 
 export default function ClimbScrubber({ result }: ClimbScrubberProps) {
   const playheadLayer = useStore((s) => s.playheadLayer);
   const setPlayheadLayer = useStore((s) => s.setPlayheadLayer);
+  const setPlayState = useStore((s) => s.setPlayState);
   const nLayers = result.trajectories[0]?.probs.length ?? 12;
   const max = nLayers - 1;
   const L = Math.max(0, Math.min(max, playheadLayer));
@@ -38,7 +39,10 @@ export default function ClimbScrubber({ result }: ClimbScrubberProps) {
         max={max}
         step={1}
         value={L}
-        onChange={(e) => setPlayheadLayer(Number(e.target.value))}
+        onChange={(e) => {
+          setPlayState("idle"); // taking manual control cancels the sweep
+          setPlayheadLayer(Number(e.target.value));
+        }}
         aria-label="Layer"
         aria-valuetext={`Layer ${L} of ${max}`}
       />

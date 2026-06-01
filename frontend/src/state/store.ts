@@ -17,12 +17,16 @@ interface SynapseState {
   /** The layer the playhead/scrubber is parked on (The Race). Rests at the
    *  final layer after each analysis; clamped to the real layer count by the UI. */
   playheadLayer: number;
+  /** Whether the automatic layer sweep is currently running (M8). Any manual
+   *  scrub cancels it. */
+  playState: "idle" | "sweeping";
   /** The prompt that produced `result`, for display. */
   analyzedPrompt: string | null;
 
   runAnalyze: (prompt: string) => Promise<void>;
   setSelectedLayer: (layer: number | null) => void;
   setPlayheadLayer: (layer: number) => void;
+  setPlayState: (state: "idle" | "sweeping") => void;
 }
 
 const LAST_LAYER = 11; // GPT-2 small: 12 layers (0..11). The scrubber rests here.
@@ -33,6 +37,7 @@ export const useStore = create<SynapseState>((set) => ({
   error: null,
   selectedLayer: null,
   playheadLayer: LAST_LAYER,
+  playState: "idle",
   analyzedPrompt: null,
 
   runAnalyze: async (prompt: string) => {
@@ -54,4 +59,5 @@ export const useStore = create<SynapseState>((set) => ({
 
   setSelectedLayer: (layer) => set({ selectedLayer: layer }),
   setPlayheadLayer: (layer) => set({ playheadLayer: layer }),
+  setPlayState: (state) => set({ playState: state }),
 }));
