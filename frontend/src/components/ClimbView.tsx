@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef } from "react";
 import * as d3 from "d3";
 
 import type { AnalyzeResponse, TokenTrajectory } from "../api/client";
+import { useStore } from "../state/store";
 import { deriveClimbEvents, composeThesis } from "./climbEvents";
+import ClimbScrubber from "./ClimbScrubber";
+import ClimbReadout from "./ClimbReadout";
 import "./ClimbView.css";
 
 interface ClimbViewProps {
@@ -24,6 +27,7 @@ const pct = d3.format(".1%");
 // never disagree. No entropy ribbon, playhead, scrubber, or motion yet.
 export default function ClimbView({ result }: ClimbViewProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const playheadLayer = useStore((s) => s.playheadLayer);
 
   // Single derivation for both the thesis (rendered in JSX) and the D3 chart.
   const events = useMemo(() => deriveClimbEvents(result.trajectories), [result]);
@@ -35,6 +39,8 @@ export default function ClimbView({ result }: ClimbViewProps) {
 
     const trajectories = result.trajectories;
     const nLayers = trajectories[0]?.probs.length ?? 12;
+    const L = Math.max(0, Math.min(nLayers - 1, playheadLayer)); // current layer
+    const atRest = L === nLayers - 1; // parked at the final, fully-revealed layer
     const globalPeak = d3.max(trajectories, (t) => t.peak) ?? 1;
     const yMax = Math.min(1, globalPeak * 1.02);
 
@@ -103,17 +109,24 @@ export default function ClimbView({ result }: ClimbViewProps) {
       .y((d) => y(d))
       .curve(d3.curveMonotoneX);
 
-    // Draw background first, winner last (on top).
-    g.append("g")
-      .attr("class", "climb-lines")
-      .selectAll("path")
-      .data(
-        [...drawn].sort((a, b) => tierRank[tierOf(a)] - tierRank[tierOf(b)]),
-        (d) => (d as TokenTrajectory).token,
-      )
+    const ordered = [...drawn].sort((a, b) => tierRank[tierOf(a)] - tierRank[tierOf(b)]);
+    const linesG = g.append("g").attr("class", "climb-lines");
+
+    // Each trajectory is drawn twice: a faint ghost of the full path (the part
+    // that "hasn't happened yet" at the current layer), and a solid segment from
+    // layer 0 up to the playhead. At rest (final layer) the solid covers it all.
+    linesG
+      .selectAll("path.climb-line--ghost")
+      .data(ordered, (d) => (d as TokenTrajectory).token)
       .join("path")
-      .attr("class", (d) => `climb-line climb-line--${tierOf(d)}`)
+      .attr("class", (d) => `climb-line climb-line--ghost climb-line--${tierOf(d)}`)
       .attr("d", (d) => line(d.probs));
+    linesG
+      .selectAll("path.climb-line--solid")
+      .data(ordered, (d) => (d as TokenTrajectory).token)
+      .join("path")
+      .attr("class", (d) => `climb-line climb-line--solid climb-line--${tierOf(d)}`)
+      .attr("d", (d) => line(d.probs.slice(0, L + 1)));
 
     // --- Endpoint labels (winner + contenders), vertically de-collided ---
     const labelItems = [winner, ...contenders]
@@ -246,7 +259,41 @@ export default function ClimbView({ result }: ClimbViewProps) {
       .attr("y", entY(lastE))
       .attr("dominant-baseline", "middle")
       .text(lastE.toFixed(1));
-  }, [result, events]);
+
+    // --- Playhead: mark the current layer across both channels. (The line
+    //     reveal/ghost split was drawn above.) ---
+    // Subordinate the (future) endpoint labels while parked on an earlier layer.
+    labels.attr("opacity", atRest ? 1 : 0.5);
+
+    // Emphasise the active layer's tick on the X axis.
+    xg.selectAll<SVGGElement, number>(".tick")
+      .filter((d) => d === L)
+      .select("text")
+      .classed("climb-tick--active", true);
+
+    // A quiet vertical cursor through the chart and the ribbon.
+    const px = x(L);
+    g.append("line")
+      .attr("class", "climb-playhead")
+      .attr("x1", px)
+      .attr("x2", px)
+      .attr("y1", 0)
+      .attr("y2", ribbonBase);
+
+    // Dots where the labelled lines sit at the current layer.
+    const playG = g.append("g").attr("class", "climb-playdots");
+    for (const t of [winner, ...contenders].filter(Boolean) as TokenTrajectory[]) {
+      playG
+        .append("circle")
+        .attr(
+          "class",
+          t.token === winner?.token ? "climb-playdot climb-playdot--winner" : "climb-playdot",
+        )
+        .attr("cx", px)
+        .attr("cy", y(t.probs[L]))
+        .attr("r", 3);
+    }
+  }, [result, events, playheadLayer]);
 
   return (
     <section className="climb" aria-label="The Climb">
@@ -267,6 +314,8 @@ export default function ClimbView({ result }: ClimbViewProps) {
           aria-label="Logit-lens probability trajectories across layers, with the winning and contending tokens labelled"
         />
       </div>
+      <ClimbScrubber result={result} />
+      <ClimbReadout result={result} />
     </section>
   );
 }

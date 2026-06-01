@@ -1,0 +1,40 @@
+.readout {
+  display: flex;
+  gap: 28px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.readout__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.readout__key {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.readout__val {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  color: var(--ink);
+}
+
+.readout__val--layer {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.readout__tok {
+  color: var(--ink);
+}
+
+.readout__muted {
+  color: var(--muted);
+}

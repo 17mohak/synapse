@@ -62,32 +62,64 @@
   font-size: 12px;
 }
 
-/* Trajectory lines, tiered by final-layer probability. */
+/* Trajectory lines, tiered by final-layer probability. Each is drawn as a faint
+   "ghost" of the full path plus a "solid" segment up to the playhead layer. */
 .climb-line {
   fill: none;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
-/* Winner: the model's actual prediction. Amber leader emphasis, on top. */
+/* Tier colours + weights. */
 .climb-line--winner {
   stroke: var(--accent);
   stroke-width: 2.25;
-  stroke-opacity: 1;
 }
-
-/* Serious contenders: neutral ink, clearly readable. */
 .climb-line--contender {
   stroke: var(--ink);
   stroke-width: 1.6;
-  stroke-opacity: 0.85;
 }
-
-/* Background candidates (incl. transient early spikes): recede. */
 .climb-line--bg {
   stroke: var(--ink);
   stroke-width: 1;
+}
+
+/* Solid (happened) opacity per tier. */
+.climb-line--solid.climb-line--winner {
+  stroke-opacity: 1;
+}
+.climb-line--solid.climb-line--contender {
+  stroke-opacity: 0.85;
+}
+.climb-line--solid.climb-line--bg {
   stroke-opacity: 0.3;
+}
+
+/* Ghost (not yet, at this layer): faint for every tier. */
+.climb-line--ghost {
+  stroke-opacity: 0.12;
+}
+
+/* The playhead: a quiet vertical cursor marking the current layer. */
+.climb-playhead {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+
+.climb-playdot {
+  fill: var(--ink);
+  fill-opacity: 0.7;
+}
+
+.climb-playdot--winner {
+  fill: var(--accent);
+  fill-opacity: 1;
+}
+
+.climb-tick--active text,
+text.climb-tick--active {
+  fill: var(--accent);
+  font-weight: 600;
 }
 
 /* Endpoint dots anchor labels to their lines. */
