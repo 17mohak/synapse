@@ -205,6 +205,30 @@ text.climb-tick--active {
   font-weight: 600;
 }
 
+/* The Standing belongs to the final layer: hidden through the approach, it blooms
+   in (fade + a small rise) when the race resolves, so the answer arrives rather
+   than being pre-printed. Custom ease-out curve; movement dropped under reduced
+   motion. transform-box keeps the translate in the group's own box. */
+.climb-verdict {
+  opacity: 0;
+  transform: translateY(10px);
+  transform-box: fill-box;
+  transition: opacity 440ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 440ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.climb-verdict.is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .climb-verdict {
+    transform: none;
+    transition: opacity 200ms ease;
+  }
+}
+
 /* The Standing: the trajectories resolve into words at their true final-layer
    height on the chart's own axis. The winner is amber; rivals are neutral and
    sized by how probable they are relative to it. */

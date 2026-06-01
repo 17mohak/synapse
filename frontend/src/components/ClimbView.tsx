@@ -234,9 +234,15 @@ export default function ClimbView({ result }: ClimbViewProps) {
       revealG.classed("is-ignited", ignited);
       nodeG.style("opacity", ignited ? 1 : 0);
 
+      // The standing belongs to the final layer: it stays hidden through the
+      // approach and blooms in only once the race reaches the last layer (the
+      // answer arrives, it is not pre-printed). Scrub back and it recedes.
+      const atEnd = f >= last - 1e-6;
+      vg.classed("is-revealed", atEnd);
+
       // At rest on the final, resolved layer the winner stands alone (decisive
       // runs only); scrub back to any earlier layer and the field returns.
-      revealG.classed("is-resolved", decisive && f >= last - 1e-6);
+      revealG.classed("is-resolved", decisive && atEnd);
 
       const li = Math.round(f);
       xg.selectAll<SVGGElement, number>(".tick").classed("climb-tick--active", (d) => d === li);
