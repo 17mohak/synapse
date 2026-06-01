@@ -1,38 +1,8 @@
 import PromptBar from "./components/PromptBar";
 import TokenStrip from "./components/TokenStrip";
-import LogitLensView from "./components/LogitLensView";
 import ClimbView from "./components/ClimbView";
-import type { TokenPrediction } from "./api/client";
 import { useStore } from "./state/store";
 import "./App.css";
-
-/** MVP-1 next-token top-10 — the model's actual prediction for the final
- *  position. Rendered inline (kept out of the BRIEF sec. 12 component list). */
-function NextToken({ predictions }: { predictions: TokenPrediction[] }) {
-  const max = predictions[0]?.prob ?? 1;
-  return (
-    <section className="nexttoken" aria-label="Next-token prediction">
-      <div className="nexttoken__head">
-        <span className="nexttoken__title">Next token</span>
-        <span className="nexttoken__sub">top 10 · final position</span>
-      </div>
-      <ol className="nexttoken__list">
-        {predictions.map((p, i) => (
-          <li className="nexttoken__row" key={i}>
-            <span className="nexttoken__tok">{p.token.replace(/^ /, "·")}</span>
-            <span className="nexttoken__bar-track">
-              <span
-                className="nexttoken__bar"
-                style={{ width: `${(p.prob / max) * 100}%` }}
-              />
-            </span>
-            <span className="nexttoken__pct">{(p.prob * 100).toFixed(1)}%</span>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 
 function EmptyState() {
   return (
@@ -89,10 +59,10 @@ export default function App() {
               </p>
             )}
             <TokenStrip tokens={result.tokens} />
-            <NextToken predictions={result.next_token_topk} />
-            <LogitLensView result={result} />
-            {/* M2: The Race scaffold, mounted below the existing grid. The grid
-                remains the live centerpiece until the swap at M10. */}
+            {/* The Race is now the single centerpiece. The old next-token list
+                and logit-lens grid were redundant views of the same prediction;
+                they competed with the climax and were retired (their components
+                remain in the repo, unmounted). */}
             <ClimbView result={result} />
           </div>
         )}
