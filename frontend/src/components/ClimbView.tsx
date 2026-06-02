@@ -15,6 +15,9 @@ interface ClimbViewProps {
   /** When false, render only the plot (the host supplies prompt line, scrubber,
    *  readout). The D3 scene, sweep, and standing are unchanged either way. */
   chrome?: boolean;
+  /** When false, drop the built-in per-layer readout (the host shows its own,
+   *  e.g. the belief leaderboard). Only meaningful with chrome. */
+  readout?: boolean;
 }
 
 const Y_TICKS = [0, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0];
@@ -34,7 +37,7 @@ const RIVAL_MIN = 15; // floor so small rivals stay readable
 // layer, a cursor tracks it, the winner ignites amber at the decisive layer, and
 // the readout follows. A steady d3.timer sweeps that frontier 0 -> last after
 // each analysis; scrubbing cancels it; reduced motion renders the resolved state.
-export default function ClimbView({ result, variant = "default", chrome = true }: ClimbViewProps) {
+export default function ClimbView({ result, variant = "default", chrome = true, readout = true }: ClimbViewProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const applyRef = useRef<((frontier: number) => void) | null>(null);
   // The running sweep timer + a handle to restart the sweep on demand (the
@@ -367,7 +370,7 @@ export default function ClimbView({ result, variant = "default", chrome = true }
             {revealed && thesis ? thesis : ""}
           </p>
           <ClimbScrubber result={result} transport onReplay={() => sweepRef.current?.()} />
-          <ClimbReadout result={result} />
+          {readout && <ClimbReadout result={result} />}
         </>
       )}
     </section>

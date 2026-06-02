@@ -772,12 +772,26 @@
 }
 .focus__body {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(248px, 332px);
+  gap: clamp(20px, 2.4vw, 44px);
+  align-items: start;
 }
-/* Bound the chart so the chart and its transport/scrubber are on screen together:
-   scrubbing is a watch-while-you-drag interaction, so the control can't live below
-   the fold. The SVG keeps its aspect (centered) and stays large and readable. */
+.focus__chart {
+  min-width: 0;
+}
+/* Bound the chart so the chart, its transport/scrubber, and the belief rail are on
+   screen together: scrubbing is a watch-while-you-drag interaction, so neither the
+   control nor the leaderboard can live below the fold. The SVG keeps its aspect. */
 .focus .climb__svg {
-  max-height: min(48vh, 460px);
+  max-height: min(46vh, 440px);
+}
+
+/* On a narrow panel the rail drops below the chart rather than crushing both. */
+@media (max-width: 860px) {
+  .focus__body {
+    grid-template-columns: 1fr;
+  }
 }
 .focus__empty {
   display: grid;

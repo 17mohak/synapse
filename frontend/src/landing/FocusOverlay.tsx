@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import ClimbView from "../components/ClimbView";
+import LayerBeliefs from "../components/LayerBeliefs";
 import { useStore } from "../state/store";
 import PromptField from "./PromptField";
 
@@ -128,7 +129,12 @@ export default function FocusOverlay() {
         </div>
         <div className="focus__body">
           {result ? (
-            <ClimbView result={result} />
+            <>
+              <div className="focus__chart">
+                <ClimbView result={result} readout={false} />
+              </div>
+              <LayerBeliefs result={result} />
+            </>
           ) : (
             <p className="focus__empty">Run a prompt to watch the model think.</p>
           )}
