@@ -103,6 +103,14 @@
   stroke: var(--ink);
   stroke-width: 1.6;
 }
+/* The nearest rival: a first-class line, distinct from the anonymous crowd, so the
+   viewer watches the gap form between the winner and the one answer that shadowed
+   it (MOTION_DIRECTION sec. 8). Mid-grey "ash" — never amber, which is reserved
+   strictly for held conviction. */
+.climb-line--rival {
+  stroke: var(--muted);
+  stroke-width: 1.8;
+}
 .climb-line--bg {
   stroke: var(--ink);
   stroke-width: 1;
@@ -125,6 +133,10 @@
   stroke-opacity: 0.85;
   transition: stroke-opacity 320ms var(--ease-out);
 }
+.climb-line--solid.climb-line--rival {
+  stroke-opacity: 0.9;
+  transition: stroke-opacity 320ms var(--ease-out);
+}
 .climb-line--solid.climb-line--bg {
   stroke-opacity: 0.3;
   transition: stroke-opacity 320ms var(--ease-out);
@@ -135,6 +147,12 @@
    scrub back to any earlier layer the field returns to full presence. */
 .climb-reveal.is-resolved .climb-line--solid.climb-line--contender {
   stroke-opacity: 0.34;
+}
+/* The rival does NOT vanish into the receding crowd at rest: it stays present as
+   the moat's second anchor, so the relationship that earned the gap remains
+   visible (the descent memory). It only settles slightly. */
+.climb-reveal.is-resolved .climb-line--solid.climb-line--rival {
+  stroke-opacity: 0.5;
 }
 .climb-reveal.is-resolved .climb-line--solid.climb-line--bg {
   stroke-opacity: 0.12;

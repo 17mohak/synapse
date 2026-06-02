@@ -97,21 +97,45 @@ export default function ClimbView({ result }: ClimbViewProps) {
     g.append("text").attr("class", "climb__axislabel").attr("x", innerW / 2).attr("y", innerH + 38).attr("text-anchor", "middle").text("layer");
     g.append("text").attr("class", "climb__axisnote").attr("x", 0).attr("y", -10).text("probability · √ scale");
 
-    // Tiers + drawn set (winner + contenders, then high-peak fill).
+    // Tiers + drawn set (winner + the nearest rival + contenders, then high-peak fill).
     const { winner, contenders } = events;
     // Did the winner clearly separate? (Same test composeThesis uses for "pulls
     // clearly ahead".) Drives both the rest-state line dimming and whether the
     // moat is drawn as a real lead or as a "no separation" hedge.
     const runnerFinal = contenders[0]?.finalProb ?? 0;
     const decisive = !!winner && winner.finalProb >= 0.1 && winner.finalProb >= 2 * runnerFinal;
+
+    // The nearest rival is the runner-up the moat is measured against (the verdict's
+    // [1]). It is promoted to a first-class line, distinct from the anonymous crowd,
+    // so the gap the viewer watches form during the sweep is between two *named*
+    // characters — the winner and the one answer that shadowed it the whole climb —
+    // and so it stays present at rest as the moat's second anchor rather than
+    // receding with the also-rans (the rival-shadow breakthrough; MOTION_DIRECTION
+    // sec. 8). Computed here so the same verdict drives the tiers and the standing.
+    const verdict = deriveVerdict(trajectories);
+    const rivalToken = verdict[1]?.token ?? null;
+
     const labelled = new Set<string>([winner?.token, ...contenders.map((t) => t.token)].filter(Boolean) as string[]);
     const drawn: TokenTrajectory[] = [winner, ...contenders].filter(Boolean) as TokenTrajectory[];
+    // Guarantee the nearest rival is always drawn: it may finish below the contender
+    // ratio yet still be the line the moat measures against.
+    const rivalTraj = rivalToken ? trajectories.find((t) => t.token === rivalToken) : undefined;
+    if (rivalTraj && !drawn.includes(rivalTraj)) drawn.push(rivalTraj);
     for (const t of [...trajectories].sort((a, b) => b.peak - a.peak)) {
       if (drawn.length >= MAX_LINES) break;
       if (!drawn.includes(t)) drawn.push(t);
     }
-    const tierOf = (t: TokenTrajectory) => (t.token === winner?.token ? "winner" : labelled.has(t.token) ? "contender" : "bg");
-    const tierRank = { bg: 0, contender: 1, winner: 2 } as const;
+    const tierOf = (t: TokenTrajectory): "bg" | "contender" | "rival" | "winner" =>
+      t.token === winner?.token
+        ? "winner"
+        : t.token === rivalToken
+          ? "rival"
+          : labelled.has(t.token)
+            ? "contender"
+            : "bg";
+    // Rival draws above the other contenders and the crowd, just beneath the winner,
+    // so the two protagonists read as one race.
+    const tierRank = { bg: 0, contender: 1, rival: 2, winner: 3 } as const;
     const ordered = [...drawn].sort((a, b) => tierRank[tierOf(a)] - tierRank[tierOf(b)]);
 
     const line = d3.line<number>().x((_d, i) => x(i)).y((d) => y(d)).curve(d3.curveMonotoneX);
@@ -138,8 +162,8 @@ export default function ClimbView({ result }: ClimbViewProps) {
     // are one object). The hero is the moat: the empty span between the winner's
     // endpoint and its nearest rival's, on the real axis, labelled with the lead.
     // Words are de-collided only enough to stay legible and each is tied back to
-    // its true endpoint by a faint connector, so the gap never lies.
-    const verdict = deriveVerdict(trajectories);
+    // its true endpoint by a faint connector, so the gap never lies. (The `verdict`
+    // computed above for the rival tier is reused here — one source for both.)
     const wordX = innerW + 110; // left edge of the words (clears the moat label)
     const vItems = verdict.map((c) => ({
       token: prose(c.token),
