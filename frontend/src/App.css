@@ -773,6 +773,12 @@
 .focus__body {
   position: relative;
 }
+/* Bound the chart so the chart and its transport/scrubber are on screen together:
+   scrubbing is a watch-while-you-drag interaction, so the control can't live below
+   the fold. The SVG keeps its aspect (centered) and stays large and readable. */
+.focus .climb__svg {
+  max-height: min(48vh, 460px);
+}
 .focus__empty {
   display: grid;
   place-items: center;

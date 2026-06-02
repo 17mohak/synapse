@@ -1,3 +1,46 @@
+.scrubber-wrap {
+  width: 100%;
+}
+
+/* Transport: makes the deep-dive's one real interaction discoverable. A replay
+   control on the left, a plain-language affordance on the right. */
+.scrubber-transport {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+.scrubber-transport__play {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 12px;
+  border-radius: 999px;
+  border: 1px solid oklch(0.8 0.14 80 / 0.3);
+  background: oklch(0.8 0.14 80 / 0.07);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  transition:
+    background 200ms var(--ease-out),
+    opacity 200ms var(--ease-out);
+}
+.scrubber-transport__play:hover:not(:disabled) {
+  background: oklch(0.8 0.14 80 / 0.15);
+}
+.scrubber-transport__play:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.scrubber-transport__hint {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--faint);
+}
+
 .scrubber {
   position: relative;
   margin-top: 4px;
@@ -62,11 +105,19 @@
 .scrubber__range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 3px;
+  width: 4px;
   height: 22px;
-  border-radius: 1px;
+  border-radius: 2px;
   background: var(--accent);
   box-shadow: 0 0 0 4px oklch(0.8 0.14 80 / 0.14);
+  transition: box-shadow 160ms var(--ease-out);
+}
+
+/* The cursor reads as grabbable: the glow swells on hover/drag so a first-timer
+   sees the rail is a control, not just a readout. */
+.scrubber__range:hover::-webkit-slider-thumb,
+.scrubber__range:active::-webkit-slider-thumb {
+  box-shadow: 0 0 0 7px oklch(0.8 0.14 80 / 0.18);
 }
 
 .scrubber__range::-moz-range-thumb {

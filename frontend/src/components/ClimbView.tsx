@@ -37,6 +37,11 @@ const RIVAL_MIN = 15; // floor so small rivals stay readable
 export default function ClimbView({ result, variant = "default", chrome = true }: ClimbViewProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const applyRef = useRef<((frontier: number) => void) | null>(null);
+  // The running sweep timer + a handle to restart the sweep on demand (the
+  // deep-dive replay control). Kept per-instance so one chart's replay never
+  // drives another's.
+  const timerRef = useRef<ReturnType<typeof d3.timer> | null>(null);
+  const sweepRef = useRef<(() => void) | null>(null);
   const clipId = useId().replace(/:/g, "");
 
   const playheadLayer = useStore((s) => s.playheadLayer);
@@ -281,32 +286,41 @@ export default function ClimbView({ result, variant = "default", chrome = true }
     };
     applyRef.current = applyLayer;
 
-    // Sweep, or render the resolved state under reduced motion.
+    // The layer sweep, packaged so it can run once on build AND be replayed on
+    // demand (the deep-dive transport). A fresh run cancels any in-flight timer.
+    // Under reduced motion it renders the resolved state with no animation.
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      applyLayer(last);
-      setPlayState("idle");
-      return;
-    }
-    applyLayer(0);
-    setPlayState("sweeping");
-    const timer = d3.timer((elapsed) => {
-      if (useStore.getState().playState !== "sweeping") {
-        timer.stop();
-        return;
-      }
-      const frontier = Math.min(last, (elapsed / SWEEP_MS) * last);
-      applyLayer(frontier);
-      const li = Math.min(last, Math.round(frontier));
-      if (li !== useStore.getState().playheadLayer) setPlayheadLayer(li);
-      if (elapsed >= SWEEP_MS) {
+    const runSweep = () => {
+      timerRef.current?.stop();
+      if (reduce) {
         applyLayer(last);
         setPlayheadLayer(last);
         setPlayState("idle");
-        timer.stop();
+        return;
       }
-    });
-    return () => timer.stop();
+      applyLayer(0);
+      setPlayState("sweeping");
+      const timer = d3.timer((elapsed) => {
+        if (useStore.getState().playState !== "sweeping") {
+          timer.stop();
+          return;
+        }
+        const frontier = Math.min(last, (elapsed / SWEEP_MS) * last);
+        applyLayer(frontier);
+        const li = Math.min(last, Math.round(frontier));
+        if (li !== useStore.getState().playheadLayer) setPlayheadLayer(li);
+        if (elapsed >= SWEEP_MS) {
+          applyLayer(last);
+          setPlayheadLayer(last);
+          setPlayState("idle");
+          timer.stop();
+        }
+      });
+      timerRef.current = timer;
+    };
+    sweepRef.current = runSweep;
+    runSweep();
+    return () => timerRef.current?.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, events, clipId]);
 
@@ -352,7 +366,7 @@ export default function ClimbView({ result, variant = "default", chrome = true }
           >
             {revealed && thesis ? thesis : ""}
           </p>
-          <ClimbScrubber result={result} />
+          <ClimbScrubber result={result} transport onReplay={() => sweepRef.current?.()} />
           <ClimbReadout result={result} />
         </>
       )}
