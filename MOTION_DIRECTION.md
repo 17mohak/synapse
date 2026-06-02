@@ -255,21 +255,38 @@ only in `studies/` and has NOT been ported.
 
 ---
 
-## 13. Current state of the motion study (`studies/motion.html`)
+## 13. Current state of the motion study (`studies/motion.html`) — FROZEN, hypothesis validated
 
 - Deterministic `seek(t)` scene; `window.show(id,t)` and `window.play(id)`.
 - Halo/glow: **removed** (it rendered as a giant amber disc — a spotlight, not a glow). Good.
 - Timing fixed so the arc finishes drawing before the standing blooms (no detach gap).
 - **Rival-shadow line added** (`r0` data + a second ash trajectory under the same reveal clip).
-- **MID-REFACTOR / currently inconsistent:** the winner word was being changed from a
-  "riding word that scales 34→96 + a ticking conviction number" to a **fixed-size word + static
-  conviction that simply fade in at rest**, and a second **rival leading dot** was added. The
-  `buildScene` half of this change landed; the `seek()` body still contains the OLD
-  riding-word / ticking / scaling logic and must be replaced with: two racing dots during the
-  build (winner amber at `yAt(arc@frontier)`, rival ash at `yAt(r0@frontier)`, both fading as
-  the standing blooms), and `word`/`conv`/rival-words/moat all driven purely by the bloom
-  factor `b` (opacity fade, no position/size/text changes). Finish that replacement, reload,
-  and re-record before judging.
+- **`seek()` refactor COMPLETE (frozen):** the riding-word / 34→96 scaling / ticking conviction
+  are all gone. The build now shows **two racing dots** (winner amber at `yAt(arc@frontier)`,
+  rival ash at `yAt(r0@frontier)`), both fading out as the standing blooms; `word` / `conv` /
+  rival-words / moat are driven **purely by the bloom factor `b`** (opacity only — no reposition,
+  no scale, no text change). Conviction `%` is now static (set once from `F.winner.p`). The
+  **crest marker** fades out with the bloom for a resolved/leaned run but **persists for the
+  collapse** (the peak `63%` is the memory of the tragedy).
+- **Rival-shadow hypothesis: VALIDATED.** Recorded all three fates (Oxygen / London / Fox) via
+  the chrome-devtools MCP at pursuit / crest / rest. The moat now reads as *earned*: you watch
+  oxygen tear away from helium (wide moat = knew), London and Paris climb together and refuse to
+  part (hairline moat = leaned), fox crater down to meet the crowd (no moat = lost its nerve).
+- **Carry these artifacts into the production port (polish, not blockers):**
+  1. The winner **leading dot is full amber even at low conviction** (~5%) during early pursuit;
+     it should drain with height (take the conviction gradient) so amber stays reserved for held
+     conviction. (Motion-introduced; `frames.html` has no dots.)
+  2. The **fox crowd (`brown`/`white`/`lazy`) overlaps to near-illegibility** at `tightCrowd`
+     gap 26 with a 96px winner — reads as a collision, not deliberate density. (Pre-existing in
+     `frames.html`.) Loosen the crowd gap or shrink the winner in the collapse case.
+  3. At the crest, the **leading dot sits inside the crest ring** → a bullseye that reads as a UI
+     control. Offset or suppress one during the hold.
+  4. **London's `amber-dim` is too subtle** — underreads vs full amber, so the "only leaned"
+     signal underfires; and the ghost `Paris` tucks cramped under `London`. Strengthen the dim
+     contrast and de-collide the ghost.
+  5. **Minor:** the trajectory ends at x≈740 but the standing word starts at x≈792; `frames.html`
+     bridged the gap with a faint connector — restore it on the winner so the line and word read
+     as one object.
 
 ---
 
@@ -293,11 +310,11 @@ mid-project (keep amber/dark; add only the serif *voice*).
 
 ## 15. What still needs to be built (priorities)
 
-1. **Finish the motion study** (`studies/motion.html`): complete the `seek()` refactor (§13),
-   then record Oxygen / London / Fox and judge whether the moat is now *earned* (the rival
-   relationship is watched, the separation/convergence/collapse reads). Iterate in the study
-   until beautiful — do NOT touch the production app until it is.
-2. **Port to production** (`ClimbView.tsx`) once the study is approved:
+1. **Finish the motion study** (`studies/motion.html`): ✅ DONE — `seek()` refactor complete,
+   all three fates recorded, the rival-shadow hypothesis validated (the moat is *earned*; see
+   §13). Study is **frozen**. Five polish artifacts logged in §13 to fix during the port (not
+   in the study). The next step is the production port.
+2. **Port to production** (`ClimbView.tsx`) — NEXT (study approved/frozen):
    - Add the **rival trajectory as a first-class line** alongside the winner during the sweep.
    - Replace riding/standing logic with the **fade-in (no scale)** standing + the **moat +
      descent-trace** at rest; remove the ticking conviction counter.

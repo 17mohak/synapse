@@ -124,8 +124,9 @@
     stage.appendChild(word);
     const wbb=word.getBBox();
     const convFill=F.fate==="settle"?"var(--amber)":F.fate==="lean"?"var(--amber-dim)":"var(--ash)";
-    const conv=E("text",{class:"measure","dominant-baseline":"middle",fill:convFill,"font-size":20,x:(wbb.x+wbb.width+18),y:winY,opacity:0}); conv.textContent=F.winner.conv||""; stage.appendChild(conv);
-    if(F.winner.dead) R_blur(); function R_blur(){ defs.querySelector("#blurg").setAttribute("stdDeviation","1.1"); }
+    // conviction figure: STATIC final probability, set once, mono, just past the word.
+    // (no ticking — it is the measured outcome, not a meter.)
+    const conv=E("text",{class:"measure","dominant-baseline":"middle",fill:convFill,"font-size":20,x:(wbb.x+wbb.width+18),y:winY,opacity:0}); conv.textContent=Math.round(F.winner.p*100)+"%"; stage.appendChild(conv);
 
     // caption
     const cap=E("text",{class:"voice",x:64,y:500,fill:"var(--ink)","font-size":38,"font-style":"italic",opacity:0}); cap.textContent=F.caption; stage.appendChild(cap);
@@ -147,47 +148,40 @@
   function seek(t){
     if(!R) return;
     const l=frontier(t);
-    const cv=convAt(F.arc,l);
-    const lx=xAt(l), ly=yAt(cv);
+    const lx=xAt(l);
+    // both trajectories are revealed by the SAME left->right clip, so the
+    // viewer watches the winner and its nearest rival race through the layers.
     R.revealrect.setAttribute("width",(lx+2).toFixed(1));
 
     // bloom of the standing — begins only once the arc has finished drawing,
-    // so the word grows out of the completed leading edge (no detach gap)
+    // so the words fade in over a completed climb (no detach gap, no growth).
     const b=smooth(T_SETTLE,0.97,t);
-    const cap=smooth(0.9,1.0,t);
+    const capO=smooth(0.9,1.0,t);
 
-    // leading dot (hidden once bloomed)
-    R.dot.setAttribute("cx",lx.toFixed(1)); R.dot.setAttribute("cy",ly.toFixed(1));
+    // two racing dots: the winner (amber) and the rival shadowing it (ash),
+    // both at their TRUE heights along the climb. They fade out exactly as the
+    // standing blooms in — the relationship hands off to its own memory.
+    const arcY=yAt(convAt(F.arc,l)), rivY=yAt(convAt(F.r0,l));
+    R.dot.setAttribute("cx",lx.toFixed(1)); R.dot.setAttribute("cy",arcY.toFixed(1));
     R.dot.setAttribute("opacity",(1-b).toFixed(2));
+    R.rivalDot.setAttribute("cx",lx.toFixed(1)); R.rivalDot.setAttribute("cy",rivY.toFixed(1));
+    R.rivalDot.setAttribute("opacity",((1-b)*0.7).toFixed(2));
 
-    // crest marker: fade in as we hold the crest, persists
+    // crest marker: the held breath at the peak. Fades in as the playhead holds
+    // the crest. It RECEDES with the bloom for a resolved/leaned run, but PERSISTS
+    // for the collapse — there the peak ("63%") is the whole tragedy worth keeping.
     const crestX=xAt(F.crest),crestY=yAt(F.arc[F.crest]);
     const crestOn=smooth(T_BUILD-0.02,T_BUILD+0.05,t);
-    R.crestRing.setAttribute("cx",crestX);R.crestRing.setAttribute("cy",crestY);R.crestRing.setAttribute("opacity",(crestOn*0.9).toFixed(2));
-    R.crestLab.setAttribute("x",crestX);R.crestLab.setAttribute("y",crestY-14);R.crestLab.textContent=Math.round(F.arc[F.crest]*100)+"%";R.crestLab.setAttribute("opacity",(crestOn*0.85).toFixed(2));
+    const crestKeep=F.fate==="collapse"?1:(1-b);
+    R.crestRing.setAttribute("cx",crestX);R.crestRing.setAttribute("cy",crestY);R.crestRing.setAttribute("opacity",(crestOn*crestKeep*0.9).toFixed(2));
+    R.crestLab.setAttribute("x",crestX);R.crestLab.setAttribute("y",crestY-14);R.crestLab.textContent=Math.round(F.arc[F.crest]*100)+"%";R.crestLab.setAttribute("opacity",(crestOn*crestKeep*0.85).toFixed(2));
 
-    // riding word -> standing winner
-    const li=clamp(Math.floor(l),0,N-1);
-    const lockLayer=F.leader.indexOf(F.winner.word);
-    const ridingWord=(li>=lockLayer&&lockLayer>=0)?F.winner.word:F.leader[li];
-    R.word.textContent = b<0.5 ? ridingWord : F.winner.word;
-    // position: leading edge -> standing slot
-    const wx=lerp(lx+16,WORD_X,easeOut(b));
-    const wy=lerp(ly,R.winY,easeOut(b));
-    const ws=lerp(34,96,easeOut(b));
-    R.word.setAttribute("x",wx.toFixed(1));R.word.setAttribute("y",wy.toFixed(1));R.word.setAttribute("font-size",ws.toFixed(1));
-    R.word.setAttribute("text-anchor",b<0.5?"start":"start");
-    R.word.setAttribute("fill", b<0.4?"var(--amber)":F.winner.fill);
-    // collapse: blur the word as it dies
-    R.blurg.setAttribute("stdDeviation", (F.fate==="collapse"? (1.2*b).toFixed(2):0));
-    R.word.setAttribute("filter", F.fate==="collapse"&&b>0.1?"url(#blur)":"none");
-
-    // conviction figure (ticks during build, locks at resolution)
-    R.conv.textContent=Math.round(cv*100)+"%";
-    R.conv.setAttribute("x",(wx+ws*F.winner.word.length*0.5+16).toFixed(1));
-    R.conv.setAttribute("y",wy.toFixed(1));
-    R.conv.setAttribute("fill", b<0.4?"var(--amber)":(F.fate==="settle"?"var(--amber)":F.fate==="lean"?"var(--amber-dim)":"var(--ash)"));
-    R.conv.setAttribute("opacity",smooth(0.18,0.32,t).toFixed(2));
+    // the standing: winner word + static conviction simply FADE IN at rest.
+    // no reposition, no scaling, no text change — they were placed once, true.
+    R.word.setAttribute("opacity",b.toFixed(2));
+    R.conv.setAttribute("opacity",b.toFixed(2));
+    // collapse: the winning word drains to ash + blur as its nerve fails.
+    if(F.fate==="collapse") R.blurg.setAttribute("stdDeviation",(1.1*b).toFixed(2));
 
     // the separation already happened as the two LINES diverged over the climb;
     // the rival words simply fade in to label where their lines ended.
@@ -212,8 +206,8 @@
     }
 
     // caption lands last
-    R.cap.setAttribute("opacity",cap.toFixed(2));
-    R.cap.setAttribute("transform",`translate(0,${lerp(8,0,cap).toFixed(1)})`);
+    R.cap.setAttribute("opacity",capO.toFixed(2));
+    R.cap.setAttribute("transform",`translate(0,${lerp(8,0,capO).toFixed(1)})`);
   }
 
   function standY(i){
