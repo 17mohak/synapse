@@ -5,6 +5,14 @@
 > reading any prior conversation. **CONTEXT.md** holds the engineering changelog; this file
 > holds the *artistic* direction and the decisions behind it.
 
+> **Scope note (2026-06-03).** This brief governs the **instrument** — the `ClimbView` chart,
+> its motion language, and the deep-dive overlay. A separate **brand/landing surface** now wraps
+> it (`frontend/src/landing/`, CONTEXT.md §13), added at the user's direction. The §7 BANNED list
+> (parallax, glow/halo, etc.) still binds the chart itself; on the landing frame, restrained
+> ambient parallax and soft line/card luminance are intentional, applied so they never become the
+> rejected data-point spotlight-halo or scroll-jacking. When the two seem to conflict, the chart
+> follows this file; the landing follows the reference and PRODUCT.md's brand scope.
+
 ---
 
 ## 0. One-paragraph summary

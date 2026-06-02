@@ -1,8 +1,25 @@
 # Product
 
+## Scope note (2026-06-03)
+
+Synapse now has **two surfaces**, and this file governs the first:
+
+1. **The instrument** (the `ClimbView` logit-lens and its deep-dive overlay). Everything below
+   still binds here: the honesty gate, "show the real thing unsmoothed", legibility, no
+   gratuitous motion *inside the chart*, reduced-motion first. The anti-references (no
+   dashboard-card template, no decorative glass over the data, no hacker-terminal theatrics)
+   remain in force for the instrument.
+2. **The brand/landing surface** (`frontend/src/landing/`, see CONTEXT.md §13). A user-directed
+   addition that wraps the instrument in a cinematic page. On *this* surface, ambitious
+   first-load choreography, soft depth, ambient parallax, and the expand-into-deep-dive morph
+   are **intentional and sanctioned** (the design "brand" register permits them). They are
+   applied with restraint — line-luminance not a halo, small drift not scroll-jacking — so the
+   instrument's credibility carries through. Where the bans below say "no page-load
+   choreography / no glass", read them as scoped to the instrument, not the landing frame.
+
 ## Register
 
-product
+product (instrument) + brand (landing surface)
 
 ## Users
 
