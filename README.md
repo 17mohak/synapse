@@ -9,7 +9,26 @@ picture called **The Race** — and then asks the question that actually matters
 
 > Not *"what word won?"* but **"did the model actually know?"**
 
-![The Race resolving on a decisive prompt: oxygen stands alone above a wide, measured moat labelled a 29-point lead.](docs/climb-water.png)
+![The Synapse landing page: a dark, editorial hero reading "Watch a transformer think." beside the live logit-lens chart, oxygen climbing to a measured 29-point moat over helium.](docs/landing.png)
+
+---
+
+## The experience
+
+Synapse opens as a single editorial page built around the chart, not a dashboard. On load the
+hero settles in and the chart **resolves itself** with a layer sweep (the forward pass made
+legible). The page is the teaser; the chart is the centerpiece it orbits.
+
+**Explore a thought** is the doorway. Pulling that lever doesn't navigate anywhere — the chart
+**expands in place** out of its own position into the full instrument: the same analysis, now
+with its layer scrubber, a per-layer readout (leader, probability, entropy), and the
+researcher-voice thesis, over a blurred, focus-locked backdrop. Press Escape, the backdrop, or
+close to settle it back. No route change, no "now loading the app".
+
+![The deep dive: the chart enlarged to fill a focused panel, with the prompt, the live sweep, and the thesis "Oxygen takes the lead at layer 10 and pulls clearly ahead, finishing at 48%."](docs/deep-dive.png)
+
+The mark — **The Aperture** — is the chart in miniature: an instrument ring enclosing a
+trajectory that climbs and resolves to a single gold node piercing the ring.
 
 ---
 
@@ -76,7 +95,9 @@ npm run dev          # http://localhost:5173
 ```
 
 The dev server proxies `/api` to the backend on port 8000, so start the backend first. Then
-open `http://localhost:5173`, type a prompt (or pick a preset), and run it.
+open `http://localhost:5173`: the landing boots into a live demo, and **Explore a thought**
+(or the expand control on the chart) opens the full instrument, where you type a prompt or pick
+a preset and run it.
 
 ---
 
@@ -118,7 +139,12 @@ frontend/src/
     ClimbView.tsx   The Race + The Standing (D3 centerpiece)
     climbEvents.ts  derived event core: winner, contenders, thesis, verdict
     ClimbScrubber / ClimbReadout   layer instrument + per-layer readout
-  state/store.ts    Zustand: result, playhead layer, sweep state
+  landing/          the cinematic page that wraps the instrument
+    Hero / HeroChart / FocusOverlay   hero, framed chart, expand-to-deep-dive
+    Fates / MiniClimb   the three-fate sparkline strip
+    SiteNav / SiteFooter / SynapseLogo   ribbon, footer, the Aperture mark
+    motion.ts       boot reveals + scroll parallax (reduced-motion aware)
+  state/store.ts    Zustand: result, playhead layer, sweep state, focus mode
   api/client.ts     typed fetch wrappers
 ```
 
@@ -138,8 +164,10 @@ frontend/src/
 
 - **Scope.** This is the logit-lens centerpiece. Attention visualization and deeper
   interpretability views (induction heads, neuron inspector) are planned but out of scope here.
-- **Accessibility & motion.** The sweep is the one signature motion and it conveys real
-  meaning (information flowing through layers). Under `prefers-reduced-motion`, the resolved
-  state renders immediately and nothing is gated behind animation.
+- **Accessibility & motion.** The layer sweep is the signature motion and it conveys real
+  meaning (information flowing through layers); the landing's boot reveals, ambient parallax,
+  and the expand-to-deep-dive morph are calm and purposeful. Under `prefers-reduced-motion`
+  everything falls back to an instant render, content is visible by default (never gated behind
+  a transition), and the deep dive is a focus-locked `role="dialog"` reachable by keyboard.
 - **Why GPT-2 small.** Small enough to run on CPU and to *understand fully*, large enough to
   show real fact recall. The point is the understanding, not the graphics.
