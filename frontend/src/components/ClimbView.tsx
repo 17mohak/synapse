@@ -10,6 +10,11 @@ import "./ClimbView.css";
 
 interface ClimbViewProps {
   result: AnalyzeResponse;
+  /** "hero" drops the scalenote header so the framing card supplies the chrome. */
+  variant?: "default" | "hero";
+  /** When false, render only the plot (the host supplies prompt line, scrubber,
+   *  readout). The D3 scene, sweep, and standing are unchanged either way. */
+  chrome?: boolean;
 }
 
 const Y_TICKS = [0, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0];
@@ -29,7 +34,7 @@ const RIVAL_MIN = 15; // floor so small rivals stay readable
 // layer, a cursor tracks it, the winner ignites amber at the decisive layer, and
 // the readout follows. A steady d3.timer sweeps that frontier 0 -> last after
 // each analysis; scrubbing cancels it; reduced motion renders the resolved state.
-export default function ClimbView({ result }: ClimbViewProps) {
+export default function ClimbView({ result, variant = "default", chrome = true }: ClimbViewProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const applyRef = useRef<((frontier: number) => void) | null>(null);
   const clipId = useId().replace(/:/g, "");
@@ -317,15 +322,17 @@ export default function ClimbView({ result }: ClimbViewProps) {
   }, [playheadLayer, playState, result]);
 
   return (
-    <section className="climb" aria-label="The Climb">
-      <header className="climb__head">
-        <p className="climb__scalenote">
-          Each line is one candidate next token by layer, on a square-root probability
-          scale (ticks mark true probabilities). The{" "}
-          <span className="climb__amber">amber line</span> is the model&rsquo;s final
-          prediction.
-        </p>
-      </header>
+    <section className={`climb climb--${variant}`} aria-label="The Climb">
+      {chrome && (
+        <header className="climb__head">
+          <p className="climb__scalenote">
+            Each line is one candidate next token by layer, on a square-root probability
+            scale (ticks mark true probabilities). The{" "}
+            <span className="climb__amber">amber line</span> is the model&rsquo;s final
+            prediction.
+          </p>
+        </header>
+      )}
       <div className="climb__plot">
         <svg
           ref={svgRef}
@@ -334,17 +341,21 @@ export default function ClimbView({ result }: ClimbViewProps) {
           aria-label="Logit-lens probability trajectories across layers, with the winning and contending tokens labelled"
         />
       </div>
-      {/* The thesis is the payoff, not the premise: it stays hidden through the
-          sweep and arrives once the race resolves, confirming what the standing
-          already showed. aria-live announces it for screen readers. */}
-      <p
-        className={`climb__thesis${revealed ? " climb__thesis--revealed" : ""}`}
-        aria-live="polite"
-      >
-        {revealed && thesis ? thesis : ""}
-      </p>
-      <ClimbScrubber result={result} />
-      <ClimbReadout result={result} />
+      {chrome && (
+        <>
+          {/* The thesis is the payoff, not the premise: it stays hidden through the
+              sweep and arrives once the race resolves, confirming what the standing
+              already showed. aria-live announces it for screen readers. */}
+          <p
+            className={`climb__thesis${revealed ? " climb__thesis--revealed" : ""}`}
+            aria-live="polite"
+          >
+            {revealed && thesis ? thesis : ""}
+          </p>
+          <ClimbScrubber result={result} />
+          <ClimbReadout result={result} />
+        </>
+      )}
     </section>
   );
 }

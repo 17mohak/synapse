@@ -4,12 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Synapse — watch a transformer think</title>
+    <meta
+      name="description"
+      content="Synapse visualizes the hidden competition inside large language models, layer by layer, token by token."
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
+    <!-- Set the motion flag before first paint so reveal animations only arm when
+         motion is allowed. If JS is off or the user prefers reduced motion, the
+         class is never added and all content renders visible by default (no FOUC,
+         no content gated behind a transition). -->
+    <script>
+      try {
+        if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          document.documentElement.classList.add("js-motion");
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

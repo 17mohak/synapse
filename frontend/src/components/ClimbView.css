@@ -5,6 +5,14 @@
   border-top: 1px solid var(--border);
 }
 
+/* Hero variant: the framing card supplies the chrome (prompt line, transport),
+   so the section sheds its own header rule and spacing and sits flush. */
+.climb--hero {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .climb__head {
   margin-bottom: 16px;
 }
@@ -128,6 +136,9 @@
 .climb-reveal.is-ignited .climb-line--solid.climb-line--winner {
   stroke: var(--accent);
   stroke-opacity: 1;
+  /* Restrained luminance once the answer ignites: the glow lives on the stroke,
+     giving the gold line weight, never a halo disc over the data point. */
+  filter: drop-shadow(0 0 5px oklch(0.8 0.14 80 / 0.4));
 }
 .climb-line--solid.climb-line--contender {
   stroke-opacity: 0.85;

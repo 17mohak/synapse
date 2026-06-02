@@ -45,6 +45,10 @@
 
   --font-ui: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* The editorial "voice": the word the model says, the hero, the pull-quote.
+     Already the committed Synapse identity (MOTION_DIRECTION sec. 10), so it
+     stays despite the greenfield reflex-reject list. */
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
 
   /* Spacing base */
   --space: 8px;
@@ -55,9 +59,13 @@
   --z-toast: 300;
   --z-tooltip: 400;
 
-  /* Motion */
+  /* Motion. Apple-grade ease-out curves: weighted at the start, settling slowly,
+     never overshooting. No bounce, no spring. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --dur: 180ms;
+  --dur-reveal: 900ms; /* the calm, expensive entrance */
 
   color-scheme: dark;
 }
@@ -116,6 +124,38 @@ button {
   background: oklch(0.8 0.14 80 / 0.25);
 }
 
+/* ── Reveal + parallax primitives ───────────────────────────────────────────
+   Content is visible by default. The hidden start state arms ONLY when the
+   pre-paint script confirmed motion is allowed (html.js-motion). A reveal then
+   plays when JS adds .is-in (on boot for above-fold, via IntersectionObserver
+   for below-fold). If JS never runs, nothing is hidden, so a section can never
+   ship blank. --i staggers siblings; --reveal-shift tunes the rise distance. */
+.reveal {
+  --i: 0;
+  --reveal-shift: 18px;
+}
+.js-motion .reveal {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-shift), 0);
+  will-change: opacity, transform;
+}
+.js-motion .reveal.is-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity var(--dur-reveal) var(--ease-out-expo),
+    transform var(--dur-reveal) var(--ease-out-expo);
+  transition-delay: calc(var(--i) * 90ms);
+}
+
+/* Parallax layers translate on a CSS var the scroll hook writes each frame.
+   Kept on dedicated wrapper elements so they never fight a .reveal transform. */
+.parallax {
+  --py: 0px;
+  transform: translate3d(0, var(--py), 0);
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -123,5 +163,13 @@ button {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  /* Belt and braces: even if .js-motion slipped through, never hide content. */
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .parallax {
+    transform: none !important;
   }
 }

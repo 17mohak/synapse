@@ -22,11 +22,15 @@ interface SynapseState {
   playState: "idle" | "sweeping";
   /** The prompt that produced `result`, for display. */
   analyzedPrompt: string | null;
+  /** Deep-dive: the landing chart card has been expanded into the focused
+   *  full-instrument overlay. The overlay owns the open/close morph. */
+  focusMode: boolean;
 
   runAnalyze: (prompt: string) => Promise<void>;
   setSelectedLayer: (layer: number | null) => void;
   setPlayheadLayer: (layer: number) => void;
   setPlayState: (state: "idle" | "sweeping") => void;
+  setFocusMode: (on: boolean) => void;
 }
 
 const LAST_LAYER = 11; // GPT-2 small: 12 layers (0..11). The scrubber rests here.
@@ -39,6 +43,7 @@ export const useStore = create<SynapseState>((set) => ({
   playheadLayer: LAST_LAYER,
   playState: "idle",
   analyzedPrompt: null,
+  focusMode: false,
 
   runAnalyze: async (prompt: string) => {
     const trimmed = prompt.trim();
@@ -69,4 +74,5 @@ export const useStore = create<SynapseState>((set) => ({
   setSelectedLayer: (layer) => set({ selectedLayer: layer }),
   setPlayheadLayer: (layer) => set({ playheadLayer: layer }),
   setPlayState: (state) => set({ playState: state }),
+  setFocusMode: (on) => set({ focusMode: on }),
 }));
