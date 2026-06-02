@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Synapse — Motion Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#16181c;--ink:#f3f4f5;--muted:#b4b8bd;--faint:#6b7178;--whisper:#4a4f56;
+    --ash:#8d9298;--amber:#e8a33e;--amber-strong:#f4b84a;--amber-dim:#c1893f;
+  }
+  *{margin:0;box-sizing:border-box}
+  body{background:#0c0d10;padding:40px;display:flex;flex-direction:column;align-items:center;gap:20px}
+  .board{width:1040px;height:546px;background:var(--bg);position:relative;overflow:hidden}
+  .voice{font-family:"Instrument Serif",Georgia,serif}
+  .measure{font-family:"JetBrains Mono",ui-monospace,monospace}
+  svg{display:block}
+  .hud{color:#666;font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.1em}
+</style>
+</head>
+<body>
+<div class="board"><svg id="stage" viewBox="0 0 1200 630" width="100%" height="100%"></svg></div>
+<div class="hud" id="hud">loading…</div>
+<script>
+  const SVGNS="http://www.w3.org/2000/svg";
+  const E=(t,a={})=>{const e=document.createElementNS(SVGNS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const smooth=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);};
+  const easeOut=(t)=>1-Math.pow(1-t,3);            // cubic-bezier(.23,1,.32,1) feel
+  const gravity=(t)=>t*t*(2.2-1.2*t);              // heavier fall for the collapse
+
+  // geometry (shared with the frozen study)
+  const X0=110,X1=740,N=12,YB=512,YT=96,WORD_X=792,TRUE_X=766;
+  const xAt=l=>X0+l*(X1-X0)/(N-1);
+  const yAt=p=>YB-Math.sqrt(Math.max(0,p))*(YB-YT);
+  function smoothPath(pts){let d=`M${pts[0][0]},${pts[0][1]}`;for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;d+=`C${p1[0]+(p2[0]-p0[0])/6},${p1[1]+(p2[1]-p0[1])/6} ${p2[0]-(p3[0]-p1[0])/6},${p2[1]-(p3[1]-p1[1])/6} ${p2[0]},${p2[1]}`;}return d;}
+  const convAt=(arc,l)=>{const i=clamp(Math.floor(l),0,N-1),f=l-i;return lerp(arc[i],arc[Math.min(N-1,i+1)],f);};
+
+  const FATES={
+    knew:{prompt:"Water is made of hydrogen and",
+      arc:[.01,.01,.01,.012,.02,.03,.05,.12,.30,.45,.636,.484],
+      r0:[.01,.01,.01,.01,.02,.03,.04,.06,.10,.14,.20,.194],
+      leader:["the","the","the","the","therefore","hydrogen","hydrogen","oxygen","oxygen","oxygen","oxygen","oxygen"],
+      crest:10,winner:{word:"oxygen",p:.484,fill:"var(--amber)"},rivals:[{word:"helium",p:.194}],
+      moat:"29 points apart",caption:"It knew. Nothing else came close.",fate:"settle"},
+    london:{prompt:"The Eiffel Tower is in the city of",
+      arc:[.01,.01,.012,.02,.03,.05,.08,.10,.20,.381,.20,.081],
+      r0:[.01,.01,.01,.02,.03,.04,.06,.08,.14,.20,.13,.069],
+      leader:["the","the","the","the","England","England","Chicago","Chicago","London","London","London","London"],
+      crest:9,winner:{word:"London",p:.081,fill:"var(--amber-dim)"},rivals:[{word:"Paris",p:.069,ghost:true}],
+      moat:"1 point apart",caption:"It chose London. Paris was right there. It never knew.",fate:"lean"},
+    fox:{prompt:"The quick brown fox jumps over the lazy",
+      arc:[.01,.01,.02,.03,.05,.08,.15,.25,.45,.63,.30,.037],
+      r0:[.01,.01,.02,.03,.04,.05,.07,.09,.10,.10,.07,.027],
+      leader:["the","the","brown","quick","lazy","dog","fox","fox","fox","fox","fox","fox"],
+      crest:9,winner:{word:"fox",p:.037,fill:"var(--ash)",dead:true},
+      rivals:[{word:"brown",p:.027},{word:"white",p:.026},{word:"lazy",p:.022}],
+      nosep:"no separation",caption:"It almost said fox. Then it lost its nerve.",fate:"collapse"},
+  };
+
+  const stage=document.getElementById("stage");
+  let R=null,F=null;
+
+  function buildScene(fate){
+    F=FATES[fate];
+    stage.innerHTML="";
+    const winY=yAt(F.winner.p);
+
+    // defs
+    const defs=E("defs");
+    defs.innerHTML=`
+      <linearGradient id="conv" gradientUnits="userSpaceOnUse" x1="0" y1="${YT}" x2="0" y2="${YB}">
+        <stop offset="0" stop-color="var(--amber-strong)"/><stop offset="0.42" stop-color="var(--amber)"/>
+        <stop offset="0.72" stop-color="var(--ash)"/><stop offset="1" stop-color="var(--whisper)"/>
+      </linearGradient>
+      <clipPath id="reveal"><rect id="revealrect" x="-20" y="0" width="0" height="630"/></clipPath>
+      <filter id="blur"><feGaussianBlur id="blurg" stdDeviation="0"/></filter>`;
+    stage.appendChild(defs);
+
+    // static chrome
+    const chrome=E("g");
+    chrome.innerHTML=`
+      <text class="measure" x="64" y="60" fill="var(--ink)" font-size="15" letter-spacing="0.22em">SYNAPSE</text>
+      <text class="measure" x="172" y="60" fill="var(--faint)" font-size="13" letter-spacing="0.16em">GPT-2 small · logit lens</text>
+      <text class="measure" x="64" y="92" fill="var(--muted)" font-size="16">${F.prompt} <tspan fill="var(--amber)">___</tspan></text>`;
+    const rulerY=556;
+    let ruler=`<line x1="${X0}" y1="${rulerY}" x2="${X1}" y2="${rulerY}" stroke="var(--whisper)" stroke-opacity="0.5"/>`;
+    for(let l=0;l<N;l++) ruler+=`<line x1="${xAt(l)}" y1="${rulerY}" x2="${xAt(l)}" y2="${rulerY+4}" stroke="var(--whisper)" stroke-opacity="0.5"/>`;
+    ruler+=`<text class="measure" x="${X0}" y="${rulerY+20}" fill="var(--whisper)" font-size="12">0</text>
+      <text class="measure" x="${(X0+X1)/2}" y="${rulerY+20}" fill="var(--whisper)" font-size="12" text-anchor="middle" letter-spacing="0.08em">depth · 12 layers</text>
+      <text class="measure" x="${X1}" y="${rulerY+20}" fill="var(--whisper)" font-size="12" text-anchor="end">11</text>`;
+    chrome.innerHTML+=ruler; stage.appendChild(chrome);
+
+    // dynamic
+    const arcPts=F.arc.map((p,l)=>[xAt(l),yAt(p)]);
+    const arcG=E("g",{"clip-path":"url(#reveal)"});
+    // the nearest rival, shadowing the winner the whole climb, so the ending
+    // (pull away / refuse to part / crater together) is earned, not asserted
+    const rivalPts=F.r0.map((p,l)=>[xAt(l),yAt(p)]);
+    const rivalLine=E("path",{d:smoothPath(rivalPts),fill:"none",stroke:"var(--ash)","stroke-width":1.6,"stroke-linecap":"round","stroke-linejoin":"round",opacity:0.42});
+    const arcPath=E("path",{d:smoothPath(arcPts),fill:"none",stroke:"url(#conv)","stroke-width":2.6,"stroke-linecap":"round","stroke-linejoin":"round",opacity:0.9});
+    arcG.appendChild(rivalLine); arcG.appendChild(arcPath); stage.appendChild(arcG);
+
+    const dot=E("circle",{r:4,fill:"var(--amber)"}); stage.appendChild(dot);
+    const rivalDot=E("circle",{r:3,fill:"var(--ash)"}); stage.appendChild(rivalDot);
+    const crestRing=E("circle",{r:5,fill:"none",stroke:"var(--amber)","stroke-width":1.2,opacity:0}); stage.appendChild(crestRing);
+    const crestLab=E("text",{class:"measure",fill:"var(--amber)","font-size":13,"text-anchor":"middle",opacity:0}); stage.appendChild(crestLab);
+
+    // moat trace
+    const trace=E("line",{stroke:"var(--amber)","stroke-width":1,"stroke-dasharray":"1 5","stroke-linecap":"round",opacity:0});
+    const traceRing=E("circle",{r:3,fill:"none",stroke:"var(--amber)","stroke-width":1.2,opacity:0});
+    const moatLab=E("text",{class:"measure",fill:F.fate==="lean"?"var(--amber-dim)":"var(--amber)","font-size":15,"text-anchor":"end","dominant-baseline":"middle",opacity:0,"letter-spacing":"0.04em"});
+    stage.appendChild(trace);stage.appendChild(traceRing);stage.appendChild(moatLab);
+
+    // rivals
+    const rivalEls=F.rivals.map(rv=>{const t=E("text",{class:"voice","font-size":40,fill:rv.ghost?"var(--whisper)":"var(--ash)","dominant-baseline":"middle","font-style":rv.ghost?"italic":"normal",opacity:0});t.textContent=rv.word;stage.appendChild(t);return t;});
+
+    // winner word: full size, fixed at its endpoint; fades in at rest (no scale)
+    const word=E("text",{class:"voice","dominant-baseline":"middle","font-size":96,x:WORD_X,y:winY,opacity:0,fill:F.winner.fill}); word.textContent=F.winner.word;
+    if(F.winner.dead) word.setAttribute("filter","url(#blur)");
+    stage.appendChild(word);
+    const wbb=word.getBBox();
+    const convFill=F.fate==="settle"?"var(--amber)":F.fate==="lean"?"var(--amber-dim)":"var(--ash)";
+    const conv=E("text",{class:"measure","dominant-baseline":"middle",fill:convFill,"font-size":20,x:(wbb.x+wbb.width+18),y:winY,opacity:0}); conv.textContent=F.winner.conv||""; stage.appendChild(conv);
+    if(F.winner.dead) R_blur(); function R_blur(){ defs.querySelector("#blurg").setAttribute("stdDeviation","1.1"); }
+
+    // caption
+    const cap=E("text",{class:"voice",x:64,y:500,fill:"var(--ink)","font-size":38,"font-style":"italic",opacity:0}); cap.textContent=F.caption; stage.appendChild(cap);
+
+    R={winY,arcPts,arcPath,dot,rivalDot,crestRing,crestLab,trace,traceRing,moatLab,rivalEls,word,conv,cap,blurg:defs.querySelector("#blurg"),revealrect:defs.querySelector("#revealrect")};
+    seek(0);
+  }
+
+  // phase boundaries: build -> hold the crest -> settle the arc to L11 -> THEN bloom
+  const T_BUILD=0.52,T_CREST=0.68,T_SETTLE=0.80;
+
+  function frontier(t){
+    if(t<=T_BUILD) return (t/T_BUILD)*F.crest;
+    if(t<=T_CREST) return F.crest;
+    if(t<=T_SETTLE) return F.crest+((t-T_CREST)/(T_SETTLE-T_CREST))*(11-F.crest);
+    return 11;
+  }
+
+  function seek(t){
+    if(!R) return;
+    const l=frontier(t);
+    const cv=convAt(F.arc,l);
+    const lx=xAt(l), ly=yAt(cv);
+    R.revealrect.setAttribute("width",(lx+2).toFixed(1));
+
+    // bloom of the standing — begins only once the arc has finished drawing,
+    // so the word grows out of the completed leading edge (no detach gap)
+    const b=smooth(T_SETTLE,0.97,t);
+    const cap=smooth(0.9,1.0,t);
+
+    // leading dot (hidden once bloomed)
+    R.dot.setAttribute("cx",lx.toFixed(1)); R.dot.setAttribute("cy",ly.toFixed(1));
+    R.dot.setAttribute("opacity",(1-b).toFixed(2));
+
+    // crest marker: fade in as we hold the crest, persists
+    const crestX=xAt(F.crest),crestY=yAt(F.arc[F.crest]);
+    const crestOn=smooth(T_BUILD-0.02,T_BUILD+0.05,t);
+    R.crestRing.setAttribute("cx",crestX);R.crestRing.setAttribute("cy",crestY);R.crestRing.setAttribute("opacity",(crestOn*0.9).toFixed(2));
+    R.crestLab.setAttribute("x",crestX);R.crestLab.setAttribute("y",crestY-14);R.crestLab.textContent=Math.round(F.arc[F.crest]*100)+"%";R.crestLab.setAttribute("opacity",(crestOn*0.85).toFixed(2));
+
+    // riding word -> standing winner
+    const li=clamp(Math.floor(l),0,N-1);
+    const lockLayer=F.leader.indexOf(F.winner.word);
+    const ridingWord=(li>=lockLayer&&lockLayer>=0)?F.winner.word:F.leader[li];
+    R.word.textContent = b<0.5 ? ridingWord : F.winner.word;
+    // position: leading edge -> standing slot
+    const wx=lerp(lx+16,WORD_X,easeOut(b));
+    const wy=lerp(ly,R.winY,easeOut(b));
+    const ws=lerp(34,96,easeOut(b));
+    R.word.setAttribute("x",wx.toFixed(1));R.word.setAttribute("y",wy.toFixed(1));R.word.setAttribute("font-size",ws.toFixed(1));
+    R.word.setAttribute("text-anchor",b<0.5?"start":"start");
+    R.word.setAttribute("fill", b<0.4?"var(--amber)":F.winner.fill);
+    // collapse: blur the word as it dies
+    R.blurg.setAttribute("stdDeviation", (F.fate==="collapse"? (1.2*b).toFixed(2):0));
+    R.word.setAttribute("filter", F.fate==="collapse"&&b>0.1?"url(#blur)":"none");
+
+    // conviction figure (ticks during build, locks at resolution)
+    R.conv.textContent=Math.round(cv*100)+"%";
+    R.conv.setAttribute("x",(wx+ws*F.winner.word.length*0.5+16).toFixed(1));
+    R.conv.setAttribute("y",wy.toFixed(1));
+    R.conv.setAttribute("fill", b<0.4?"var(--amber)":(F.fate==="settle"?"var(--amber)":F.fate==="lean"?"var(--amber-dim)":"var(--ash)"));
+    R.conv.setAttribute("opacity",smooth(0.18,0.32,t).toFixed(2));
+
+    // the separation already happened as the two LINES diverged over the climb;
+    // the rival words simply fade in to label where their lines ended.
+    F.rivals.forEach((rv,i)=>{
+      const el=R.rivalEls[i];
+      el.setAttribute("x",WORD_X);el.setAttribute("y",standY(i).toFixed(1));
+      el.setAttribute("opacity",(b*(rv.ghost?0.8:0.92)).toFixed(2));
+    });
+
+    // moat trace draws open with the separation
+    if(F.fate!=="collapse"){
+      const yTop=R.winY,yBot=yAt(F.rivals[0].p);
+      R.traceRing.setAttribute("cx",WORD_X-16);R.traceRing.setAttribute("cy",yTop);R.traceRing.setAttribute("opacity",(b).toFixed(2));
+      R.trace.setAttribute("x1",WORD_X-16);R.trace.setAttribute("x2",WORD_X-16);
+      R.trace.setAttribute("y1",yTop+5);R.trace.setAttribute("y2",lerp(yTop+5,yBot,easeOut(b)).toFixed(1));
+      R.trace.setAttribute("opacity",(b*0.7).toFixed(2));
+      R.moatLab.textContent=F.moat;R.moatLab.setAttribute("x",WORD_X-28);R.moatLab.setAttribute("y",(yTop+yBot)/2);R.moatLab.setAttribute("opacity",b.toFixed(2));
+    } else {
+      R.moatLab.textContent=F.nosep;R.moatLab.setAttribute("class","measure");R.moatLab.setAttribute("fill","var(--muted)");
+      R.moatLab.setAttribute("font-size",14);R.moatLab.setAttribute("letter-spacing","0.14em");
+      R.moatLab.setAttribute("x",WORD_X-16);R.moatLab.setAttribute("y",R.winY-30);R.moatLab.setAttribute("opacity",b.toFixed(2));
+    }
+
+    // caption lands last
+    R.cap.setAttribute("opacity",cap.toFixed(2));
+    R.cap.setAttribute("transform",`translate(0,${lerp(8,0,cap).toFixed(1)})`);
+  }
+
+  function standY(i){
+    const gap=F.fate==="collapse"?26:46;
+    let y=yAt(F.rivals[i].p), prev=R.winY;
+    for(let k=0;k<=i;k++){const ty=yAt(F.rivals[k].p);y=Math.max(ty,prev+gap);prev=y;}
+    return y;
+  }
+
+  // public controls
+  let raf=null, t0=0, DUR=5200;
+  window.show=(id,t)=>{ if(!F||FATES[id]!==F) buildScene(id); seek(t); document.getElementById("hud").textContent=id+"  t="+t.toFixed(2); };
+  window.play=(id)=>{ buildScene(id); cancelAnimationFrame(raf); t0=performance.now();
+    const tick=(now)=>{ let t=clamp((now-t0)/DUR,0,1);
+      // dilate time around the crest (real-time feel of the held breath)
+      seek(t); document.getElementById("hud").textContent=id+"  playing t="+t.toFixed(2);
+      if(t<1) raf=requestAnimationFrame(tick); };
+    raf=requestAnimationFrame(tick);
+  };
+
+  // boot
+  document.fonts.ready.then(()=>{ buildScene("knew"); seek(1); document.getElementById("hud").textContent="ready"; document.title="ready"; });
+</script>
+</body>
+</html>

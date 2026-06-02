@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Synapse — Frozen Frame Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:    #16181c;
+    --ink:   #f3f4f5;
+    --muted: #b4b8bd;
+    --faint: #6b7178;
+    --whisper:#4a4f56;
+    --ash:   #8d9298;
+    --amber: #e8a33e;
+    --amber-strong: #f4b84a;
+    --amber-dim: #c1893f;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body {
+    background: #0c0d10;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    align-items: center;
+  }
+  .board {
+    width: 1200px;
+    height: 630px;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+  svg { display: block; }
+
+  /* ---- type system: the said vs the measured ---- */
+  .voice   { font-family: "Instrument Serif", Georgia, serif; }
+  .measure { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+  text.brand   { fill: var(--ink); font-size: 15px; letter-spacing: 0.22em; }
+  text.tag     { fill: var(--faint); font-size: 13px; letter-spacing: 0.16em; }
+  text.prompt  { fill: var(--muted); font-size: 16px; }
+  text.promptblank { fill: var(--amber); font-size: 16px; }
+
+  text.word        { fill: var(--ash); }
+  text.word--win   { fill: var(--amber); }
+  text.word--lean  { fill: var(--amber-dim); }
+  text.word--dead  { fill: var(--ash); }
+  text.ghost       { fill: var(--whisper); font-style: italic; }
+
+  text.conv  { fill: var(--amber); font-size: 20px; letter-spacing: 0.02em; }
+  text.conv--dim { fill: var(--amber-dim); }
+  text.moat  { fill: var(--amber); font-size: 15px; letter-spacing: 0.04em; }
+  text.nosep { fill: var(--muted); font-size: 14px; letter-spacing: 0.14em; }
+
+  text.caption { fill: var(--ink); font-size: 38px; font-style: italic; }
+  text.ruler   { fill: var(--whisper); font-size: 12px; letter-spacing: 0.08em; }
+
+  .grid   { stroke: var(--whisper); }
+  .arc    { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .enddot { }
+  .connector { stroke: var(--whisper); stroke-width: 1; fill: none; }
+  .truedot { fill: var(--ash); }
+  .truedot--win { fill: var(--amber); }
+  .trace  { stroke: var(--amber); stroke-width: 1; stroke-dasharray: 1 5; stroke-linecap: round; opacity: 0.7; }
+  .ring   { fill: none; stroke: var(--amber); stroke-width: 1.2; }
+</style>
+</head>
+<body>
+<script>
+  // ---------- geometry ----------
+  const X0 = 110, X1 = 740, N = 12;          // arc depth band
+  const YB = 512, YT = 96;                    // conviction 0 -> YB, 1 -> YT (sqrt)
+  const xAt = (l) => X0 + l * (X1 - X0) / (N - 1);
+  const yAt = (p) => YB - Math.sqrt(Math.max(0, p)) * (YB - YT);
+
+  // Catmull-Rom -> smooth path (so the history line reads as one breath, not a polyline)
+  function smooth(pts) {
+    if (pts.length < 2) return "";
+    let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += `C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+    }
+    return d;
+  }
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+  // ---------- the three fates (real GPT-2 small numbers) ----------
+  const FATES = [
+    {
+      id: "knew",
+      prompt: "Water is made of hydrogen and",
+      arc: [.01,.01,.01,.012,.02,.03,.05,.12,.30,.45,.636,.484],
+      winner: { word: "oxygen", p: .484, cls: "word--win", conv: "48%" },
+      rivals: [{ word: "helium", p: .194, cls: "word--dead" }],
+      moat: "29 points apart",
+      caption: "It knew. Nothing else came close.",
+      winY: .484, rivalY: .194,
+    },
+    {
+      id: "leaned",
+      prompt: "The Eiffel Tower is in the city of",
+      arc: [.01,.01,.012,.02,.03,.05,.08,.10,.20,.381,.20,.081],
+      winner: { word: "London", p: .081, cls: "word--lean", conv: "8%", convCls: "conv--dim" },
+      rivals: [{ word: "Paris", p: .069, cls: "word--dead", ghost: true }],
+      moat: "1 point apart",
+      caption: "It chose London. Paris was right there. It never knew.",
+      winY: .081, rivalY: .069,
+    },
+    {
+      id: "collapsed",
+      prompt: "The quick brown fox jumps over the lazy",
+      arc: [.01,.01,.02,.03,.05,.08,.15,.25,.45,.63,.30,.037],
+      winner: { word: "fox", p: .037, cls: "word--dead", conv: "4%", dead: true, convFill: "var(--ash)" },
+      rivals: [{ word: "brown", p: .027, cls: "word--dead" }, { word: "white", p: .026, cls: "word--dead" }, { word: "lazy", p: .022, cls: "word--dead" }],
+      crest: { layer: 9, label: "63%" },
+      nosep: "no separation",
+      caption: "It almost said fox. Then it lost its nerve.",
+      winY: .037, rivalY: .027, tightCrowd: true,
+    },
+  ];
+
+  // ---------- standing layout (right region) ----------
+  const TRUE_X = 766;      // x of the true-probability endpoint dots
+  const WORD_X = 792;      // left edge of the standing words
+  const MIN_GAP = 46;      // minimum legible gap between stacked word centers
+
+  function render(f) {
+    const winYpx = yAt(f.winner.p);
+    // de-collide the words downward from their true heights, keeping legibility.
+    // A hedge packs tight (near-fused) to read as "no separation"; otherwise a
+    // legible gap. The first word (winner) is never moved off its true height.
+    const gap = f.tightCrowd ? 26 : MIN_GAP;
+    const all = [f.winner, ...f.rivals];
+    const placed = [];
+    let prevBottom = -1e9;
+    for (const c of all) {
+      let yc = yAt(c.p);
+      if (yc < prevBottom + gap) yc = prevBottom + gap;
+      placed.push({ ...c, ty: yAt(c.p), wy: yc });
+      prevBottom = yc;
+    }
+
+    const arcPts = f.arc.map((p, l) => [xAt(l), yAt(p)]);
+    const arcEnd = arcPts[arcPts.length - 1];
+
+    let svg = "";
+    // defs: conviction gradient (colour == height == certainty) + winner halo
+    svg += `<defs>
+      <linearGradient id="conv-${f.id}" gradientUnits="userSpaceOnUse" x1="0" y1="${YT}" x2="0" y2="${YB}">
+        <stop offset="0" stop-color="var(--amber-strong)"/>
+        <stop offset="0.42" stop-color="var(--amber)"/>
+        <stop offset="0.72" stop-color="var(--ash)"/>
+        <stop offset="1" stop-color="var(--whisper)"/>
+      </linearGradient>
+      <radialGradient id="halo-${f.id}">
+        <stop offset="0" stop-color="var(--amber)" stop-opacity="${(0.16 * Math.sqrt(f.winner.p)).toFixed(3)}"/>
+        <stop offset="1" stop-color="var(--amber)" stop-opacity="0"/>
+      </radialGradient>
+      ${f.winner.dead ? `<filter id="blur-${f.id}"><feGaussianBlur stdDeviation="1.1"/></filter>` : ``}
+    </defs>`;
+
+    // winner halo (brightness scales with how sure it ended up)
+    svg += `<circle cx="${WORD_X + 70}" cy="${winYpx}" r="280" fill="url(#halo-${f.id})"/>`;
+
+    // brand + prompt (quiet context, top-left)
+    svg += `<text class="measure brand" x="64" y="60">SYNAPSE</text>`;
+    svg += `<text class="measure tag" x="172" y="60">GPT-2 small · logit lens</text>`;
+    svg += `<text class="measure prompt" x="64" y="92">${esc(f.prompt)} <tspan class="promptblank">___</tspan></text>`;
+
+    // depth ruler (a whisper)
+    const rulerY = 556;
+    svg += `<line class="grid" x1="${X0}" y1="${rulerY}" x2="${X1}" y2="${rulerY}" stroke-opacity="0.5"/>`;
+    for (let l = 0; l < N; l++) {
+      svg += `<line class="grid" x1="${xAt(l)}" y1="${rulerY}" x2="${xAt(l)}" y2="${rulerY + 4}" stroke-opacity="0.5"/>`;
+    }
+    svg += `<text class="measure ruler" x="${X0}" y="${rulerY + 20}">0</text>`;
+    svg += `<text class="measure ruler" x="${(X0 + X1) / 2}" y="${rulerY + 20}" text-anchor="middle">depth · 12 layers</text>`;
+    svg += `<text class="measure ruler" x="${X1}" y="${rulerY + 20}" text-anchor="end">11</text>`;
+
+    // the one history line (the climb), coloured by conviction at every point
+    svg += `<path class="arc" d="${smooth(arcPts)}" stroke="url(#conv-${f.id})" opacity="0.62"/>`;
+    // its resolution into the standing
+    svg += `<line class="connector" x1="${arcEnd[0]}" y1="${arcEnd[1]}" x2="${TRUE_X}" y2="${winYpx}" stroke-opacity="0.4"/>`;
+
+    // crest marker for the collapse (the moment it almost decided)
+    if (f.crest) {
+      const cx = xAt(f.crest.layer), cy = yAt(f.arc[f.crest.layer]);
+      svg += `<circle class="ring" cx="${cx}" cy="${cy}" r="4.5"/>`;
+      svg += `<text class="measure" x="${cx}" y="${cy - 14}" text-anchor="middle" fill="var(--amber)" font-size="13" opacity="0.85">${f.crest.label}</text>`;
+    }
+
+    // true-probability endpoint dots (honest positions) + connectors to de-collided words
+    for (const c of placed) {
+      const isWin = c === placed[0];
+      svg += `<circle class="truedot${isWin ? ' truedot--win' : ''}" cx="${TRUE_X}" cy="${c.ty}" r="${isWin ? 3.4 : 2.4}"/>`;
+      if (Math.abs(c.ty - c.wy) > 2) {
+        svg += `<path class="connector" d="M${TRUE_X},${c.ty} L${WORD_X - 8},${c.wy}" stroke-opacity="0.3"/>`;
+      }
+    }
+
+    // the moat: descent trace + measure (only when something actually separated)
+    if (!f.nosep) {
+      const yTop = yAt(f.winner.p), yBot = yAt(f.rivals[0].p);
+      svg += `<circle class="ring" cx="${WORD_X - 16}" cy="${yTop}" r="3"/>`;
+      svg += `<line class="trace" x1="${WORD_X - 16}" y1="${yTop + 5}" x2="${WORD_X - 16}" y2="${yBot}"/>`;
+      svg += `<text class="measure moat ${f.winner.convCls === 'conv--dim' ? '' : ''}" x="${WORD_X - 28}" y="${(yTop + yBot) / 2}" text-anchor="end" dominant-baseline="middle"${f.winner.convCls ? ' fill="var(--amber-dim)"' : ''}>${f.moat}</text>`;
+    } else {
+      svg += `<text class="measure nosep" x="${WORD_X - 16}" y="${yAt(f.winner.p) - 30}" text-anchor="end">${f.nosep}</text>`;
+    }
+
+    // the standing words (the said)
+    placed.forEach((c, i) => {
+      const isWin = i === 0;
+      const size = isWin ? 96 : 40;
+      const filter = (isWin && f.winner.dead) ? ` filter="url(#blur-${f.id})"` : "";
+      svg += `<text class="voice word ${c.cls}${c.ghost ? ' ghost' : ''}" x="${WORD_X}" y="${c.wy}" font-size="${size}" dominant-baseline="middle"${filter}>${esc(c.word)}</text>`;
+    });
+    // conviction number, mono, set inline to the RIGHT of the winning word so it
+    // never collides with the rivals stacked beneath it. (measured post-insert)
+    if (f.winner.conv) {
+      const fill = f.winner.convFill || (f.winner.convCls === 'conv--dim' ? 'var(--amber-dim)' : 'var(--amber)');
+      svg += `<text class="measure conv-inline" data-winy="${winYpx}" x="0" y="${winYpx}" dominant-baseline="middle" font-size="20" fill="${fill}" opacity="0">${f.winner.conv}</text>`;
+    }
+
+    // the caption (lands last) — editorial split, lower-left
+    svg += `<text class="voice caption" x="64" y="500">${esc(f.caption)}</text>`;
+
+    return `<svg viewBox="0 0 1200 630" width="1200" height="630">${svg}</svg>`;
+  }
+
+  for (const f of FATES) {
+    const div = document.createElement("div");
+    div.className = "board";
+    div.id = "board-" + f.id;
+    div.innerHTML = render(f);
+    document.body.appendChild(div);
+    // place the conviction figure just past the winning word's real right edge
+    const svg = div.querySelector("svg");
+    const win = svg.querySelector(".voice.word"); // first = winner
+    const conv = svg.querySelector(".conv-inline");
+    if (win && conv) {
+      const r = win.getBBox();
+      conv.setAttribute("x", (r.x + r.width + 18).toFixed(1));
+      conv.setAttribute("opacity", "1");
+    }
+  }
+  document.title = "ready";
+</script>
+</body>
+</html>
