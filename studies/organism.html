@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Synapse — the Organism (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* Smallest-possible Organism. One prompt (oxygen / "it knew"), looping forever:
+     POSE -> THINK (sweep) -> STAND (hold) -> DISSOLVE -> repeat. Grab the prompt and
+     it yields (freezes on its Standing); let go and it resumes thinking. Real
+     canonical GPT-2-small numbers (MOTION_DIRECTION sec. 11). This is a feeling
+     test, not production: no D3, no ClimbView, no backend. */
+  :root{
+    --bg:#16181c; --ink:#f3f4f5; --ash:#8d9298; --amber:#e8a33e; --amber-dim:#9c7536;
+    --whisper:#3b3f46; --faint:#5a5f66;
+    --serif:"Instrument Serif",Georgia,serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --ui:"Inter",system-ui,sans-serif;
+    --ease:cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 80% -10%, rgba(232,163,62,.06), transparent 55%),
+      var(--bg);
+    color:var(--ink); font-family:var(--ui);
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  .stage{position:relative; height:100vh; display:flex; flex-direction:column; padding:clamp(18px,3vw,40px);}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between;}
+  .brand{font-size:.8rem; letter-spacing:.38em; text-transform:uppercase; color:var(--ink); opacity:.9;}
+  .live{display:inline-flex; align-items:center; gap:9px; font-family:var(--mono); font-size:.68rem; letter-spacing:.22em; text-transform:uppercase; color:var(--ash);}
+  .live__dot{width:7px; height:7px; border-radius:50%; background:var(--amber); box-shadow:0 0 10px rgba(232,163,62,.6); animation:pulse 2.6s var(--ease) infinite;}
+  @keyframes pulse{0%,100%{opacity:.35; transform:scale(.85)}50%{opacity:1; transform:scale(1)}}
+
+  /* The posed question + the seize handle (one editable line). */
+  .prompt{display:flex; align-items:center; gap:14px; margin-top:clamp(14px,2.5vh,26px);}
+  .prompt__label{font-family:var(--mono); font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--faint);}
+  .prompt__input{
+    flex:0 1 auto; min-width:0; background:none; border:none; outline:none;
+    color:var(--ink); font-family:var(--mono); font-size:clamp(.9rem,1.3vw,1.05rem);
+    letter-spacing:.01em; padding:4px 2px; border-bottom:1px solid transparent; caret-color:var(--amber);
+    width:30ch; max-width:60vw;
+  }
+  .prompt__input:focus{border-bottom-color:rgba(232,163,62,.5);}
+  .prompt__hint{font-family:var(--mono); font-size:.62rem; letter-spacing:.06em; color:var(--faint); opacity:.7;
+    transition:opacity .3s var(--ease), color .3s var(--ease);}
+
+  .plot{position:relative; flex:1; min-height:0; margin-top:clamp(6px,1.5vh,18px);}
+  svg{display:block; width:100%; height:100%;}
+
+  /* trajectories */
+  .crowd{fill:none; stroke:var(--ink); stroke-opacity:.08; stroke-width:1; vector-effect:non-scaling-stroke;}
+  .rival{fill:none; stroke:var(--ash); stroke-width:1.8; stroke-opacity:.85; vector-effect:non-scaling-stroke;}
+  .winner{fill:none; stroke:var(--amber-dim); stroke-width:2.6; stroke-linecap:round; vector-effect:non-scaling-stroke;
+    transition:stroke .5s var(--ease);}
+  .winner.lit{stroke:var(--amber);}
+  .dot{stroke:none;}
+  .dot--w{fill:var(--amber);} .dot--w.dim{fill:var(--amber-dim);}
+  .dot--r{fill:var(--ash);}
+
+  .axis text{fill:var(--faint); font-family:var(--mono); font-size:11px;}
+  .axis line{stroke:var(--whisper); stroke-opacity:.5;}
+  .note{fill:var(--faint); font-family:var(--mono); font-size:11px; letter-spacing:.05em;}
+
+  /* The Standing (the still that the motion earns). */
+  .stand{opacity:0;}
+  .stand__word{font-family:var(--serif); fill:var(--amber); font-size:46px; dominant-baseline:middle;}
+  .stand__rival{font-family:var(--serif); fill:var(--ash); font-size:26px; dominant-baseline:middle;}
+  .stand__pct{font-family:var(--mono); fill:var(--faint); font-size:13px; dominant-baseline:middle;}
+  .moat__rule{stroke:var(--amber); stroke-width:1.2;}
+  .moat__cap{stroke:var(--amber); stroke-width:1.2;}
+  .moat__label{font-family:var(--mono); fill:var(--amber); font-size:12px; letter-spacing:.04em;}
+  .connector{stroke:var(--ash); stroke-opacity:.3; stroke-width:1; vector-effect:non-scaling-stroke;}
+
+  /* The payoff line — lands last, lower-left, never a spoiler. */
+  .thesis{position:absolute; left:0; bottom:clamp(40px,7vh,86px); max-width:30ch;
+    font-family:var(--serif); font-style:italic; font-size:clamp(1.3rem,2.4vw,2rem); line-height:1.2;
+    color:var(--ink); opacity:0; transform:translateY(8px);
+    transition:opacity .6s var(--ease), transform .6s var(--ease); pointer-events:none;}
+  .thesis.in{opacity:1; transform:none;}
+
+  /* seized: the organism has yielded the wheel. */
+  body.seized .live{color:var(--amber);}
+  body.seized .prompt__hint{opacity:1; color:var(--ash);}
+  body.seized .live__dot{animation:none; opacity:1;}
+
+  @media (prefers-reduced-motion: reduce){
+    .live__dot{animation:none;}
+    .winner,.thesis,.stand{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="topbar">
+      <span class="brand">Synapse</span>
+      <span class="live"><span class="live__dot"></span><span id="liveLabel">thinking</span></span>
+    </div>
+    <div class="prompt">
+      <span class="prompt__label">Prompt</span>
+      <input class="prompt__input" id="prompt" spellcheck="false" autocomplete="off" value="Water is made of hydrogen and" aria-label="Prompt" />
+      <span class="prompt__hint" id="hint">type to take the wheel · enter to re-run</span>
+    </div>
+    <div class="plot">
+      <svg id="svg" preserveAspectRatio="xMidYMid meet" aria-label="The model thinking, layer by layer"></svg>
+      <p class="thesis" id="thesis">It knew. Nothing else came close.</p>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // ── real canonical numbers (knew / oxygen), layers 0..11 ───────────────────
+  const oxygen=[.01,.01,.01,.012,.02,.03,.05,.12,.30,.45,.636,.484];
+  const helium=[.01,.01,.01,.01,.02,.03,.04,.06,.10,.14,.20,.194];
+  const crowd=[
+    [.01,.02,.04,.03,.05,.04,.03,.03,.04,.05,.04,.03],
+    [.01,.01,.02,.05,.08,.06,.04,.03,.03,.02,.02,.02],
+    [.02,.03,.02,.02,.03,.05,.06,.05,.04,.03,.03,.03],
+  ];
+  const N=12, PEAK=0.636, DECISIVE=9;
+
+  // ── geometry ────────────────────────────────────────────────────────────────
+  const VB={w:1120,h:560};
+  const M={t:46,r:300,b:64,l:84};
+  const innerW=VB.w-M.l-M.r, innerH=VB.h-M.t-M.b;
+  const x0=M.l, x1=M.l+innerW, y0=M.t+innerH, y1=M.t;
+  const xAt=i=>x0+(i/(N-1))*innerW;
+  const yAt=p=>y0-Math.sqrt(Math.max(0,p)/PEAK)*(y0-y1);
+  const probAt=(a,f)=>{const i=Math.floor(f),t=f-i; return i>=N-1?a[N-1]:a[i]*(1-t)+a[i+1]*t;};
+
+  function smooth(pts){
+    if(pts.length<2)return"";
+    let d=`M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+    for(let i=0;i<pts.length-1;i++){
+      const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+      const c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6;
+      const c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
+      d+=`C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+    }
+    return d;
+  }
+  const pathFor=a=>smooth(a.map((p,i)=>[xAt(i),yAt(p)]));
+
+  // ── build the scene once ────────────────────────────────────────────────────
+  const svg=document.getElementById("svg");
+  svg.setAttribute("viewBox",`0 0 ${VB.w} ${VB.h}`);
+  const yOx=yAt(oxygen[11]), yHe=yAt(helium[11]), wx=x1+44, mx=x1+14;
+  const ticks=[0,3,6,9,11];
+  svg.innerHTML=`
+    <defs><clipPath id="rev"><rect id="clip" x="${x0-6}" y="${y1-24}" width="0" height="${innerH+48}"/></clipPath></defs>
+    <g class="axis">
+      <line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y0}"/>
+      ${ticks.map(i=>`<text x="${xAt(i)}" y="${y0+22}" text-anchor="middle">${i}</text>`).join("")}
+      <text class="note" x="${x0}" y="${y1-14}">probability · √ scale</text>
+    </g>
+    <g id="reveal" clip-path="url(#rev)">
+      ${crowd.map(c=>`<path class="crowd" d="${pathFor(c)}"/>`).join("")}
+      <path class="rival" id="rival" d="${pathFor(helium)}"/>
+      <path class="winner" id="winner" d="${pathFor(oxygen)}"/>
+      <circle id="dotR" class="dot dot--r" r="3.4" cx="0" cy="0" style="opacity:0"/>
+      <circle id="dotW" class="dot dot--w" r="4.4" cx="0" cy="0" style="opacity:0"/>
+    </g>
+    <g class="stand" id="stand">
+      <line class="connector" x1="${xAt(11)}" y1="${yOx}" x2="${wx-8}" y2="${yOx}"/>
+      <line class="connector" x1="${xAt(11)}" y1="${yHe}" x2="${wx-8}" y2="${yHe}"/>
+      <line class="moat__rule" x1="${mx}" y1="${yOx}" x2="${mx}" y2="${yHe}"/>
+      <line class="moat__cap" x1="${mx-5}" y1="${yOx}" x2="${mx+5}" y2="${yOx}"/>
+      <line class="moat__cap" x1="${mx-5}" y1="${yHe}" x2="${mx+5}" y2="${yHe}"/>
+      <text class="moat__label" x="${mx+12}" y="${(yOx+yHe)/2}" dominant-baseline="middle">29 points apart</text>
+      <text class="stand__word" x="${wx}" y="${yOx}">oxygen</text>
+      <text class="stand__pct" x="${wx+130}" y="${yOx}">48%</text>
+      <text class="stand__rival" x="${wx}" y="${yHe}">helium</text>
+      <text class="stand__pct" x="${wx+96}" y="${yHe}">19%</text>
+    </g>`;
+
+  const clip=document.getElementById("clip");
+  const winner=document.getElementById("winner");
+  const dotW=document.getElementById("dotW"), dotR=document.getElementById("dotR");
+  const stand=document.getElementById("stand");
+  const reveal=document.getElementById("reveal");
+  const thesis=document.getElementById("thesis");
+  const liveLabel=document.getElementById("liveLabel");
+
+  // ── the cycle (the breath) ──────────────────────────────────────────────────
+  const POSE=600, THINK=2600, HOLD=3200, DISSOLVE=700;
+  const T_THINK=POSE, T_HOLD=POSE+THINK, T_DISS=POSE+THINK+HOLD, TOTAL=T_DISS+DISSOLVE;
+  const decX=xAt(DECISIVE);
+
+  function render(ms){
+    let frac, phase;
+    if(ms<T_THINK){frac=0; phase="pose";}
+    else if(ms<T_HOLD){frac=(ms-T_THINK)/THINK; phase="think";}
+    else if(ms<T_DISS){frac=1; phase="stand";}
+    else {frac=1; phase="dissolve";}
+
+    // the sweep
+    clip.setAttribute("width", (frac*innerW + (frac>0?6:0)).toFixed(1));
+    const fx=x0+frac*innerW;
+    const lit = fx>=decX || phase==="stand" || phase==="dissolve";
+    winner.classList.toggle("lit", lit);
+
+    // racing dots (only while thinking)
+    if(phase==="think"){
+      const fl=frac*(N-1);
+      dotW.setAttribute("cx",fx); dotW.setAttribute("cy",yAt(probAt(oxygen,fl))); dotW.style.opacity=1;
+      dotR.setAttribute("cx",fx); dotR.setAttribute("cy",yAt(probAt(helium,fl))); dotR.style.opacity=1;
+      dotW.classList.toggle("dim", !lit);
+    } else { dotW.style.opacity=0; dotR.style.opacity=0; }
+
+    // the Standing blooms, holds, then the whole verdict recedes (decay, not cut)
+    let standOp=0, revealOp=1;
+    if(phase==="stand"){ standOp=Math.min(1,(ms-T_HOLD)/450); }
+    else if(phase==="dissolve"){ const k=(ms-T_DISS)/DISSOLVE; standOp=Math.max(0,1-k); revealOp=1-0.85*k; }
+    stand.style.opacity=standOp;
+    reveal.style.opacity=revealOp;
+    thesis.classList.toggle("in", phase==="stand" && standOp>0.6);
+
+    liveLabel.textContent = seized ? "yours" : (phase==="pose"?"posing":phase==="think"?"thinking":phase==="stand"?"standing":"");
+  }
+
+  // ── clock + seize ───────────────────────────────────────────────────────────
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let start=performance.now(), raf=0, seized=false, frozen=false, frozenMs=0;
+
+  function frame(now){
+    if(frozen||seized){return;}
+    render((now-start)%TOTAL);
+    raf=requestAnimationFrame(frame);
+  }
+  function play(){ cancelAnimationFrame(raf); frozen=false; start=performance.now()-frozenMs; raf=requestAnimationFrame(frame); }
+
+  if(reduced){
+    // rest on the Standing; never auto-loop. Fully operable.
+    render(T_HOLD+460); thesis.classList.add("in"); liveLabel.textContent="at rest";
+  } else {
+    raf=requestAnimationFrame(frame);
+  }
+
+  const input=document.getElementById("prompt");
+  const hint=document.getElementById("hint");
+  function seize(){
+    if(seized)return;
+    seized=true; frozenMs=(performance.now()-start)%TOTAL; cancelAnimationFrame(raf);
+    document.body.classList.add("seized"); render(frozenMs);
+  }
+  function release(){
+    if(!seized)return;
+    seized=false; document.body.classList.remove("seized");
+    if(reduced){ render(T_HOLD+460); return; }
+    play();
+  }
+  input.addEventListener("focus", seize);
+  input.addEventListener("input", ()=>{ seize(); hint.textContent="enter to watch it think"; });
+  input.addEventListener("blur", release);
+  input.addEventListener("keydown", e=>{
+    if(e.key==="Enter"){
+      e.preventDefault(); input.blur();
+      // re-run the thinking on demand, then resume the loop
+      seized=false; document.body.classList.remove("seized"); frozenMs=0; play();
+    } else if(e.key==="Escape"){ input.blur(); }
+  });
+
+  // ── deterministic hooks for headless capture (rAF is throttled in background) ─
+  window.__seek = t=>{ frozen=true; cancelAnimationFrame(raf); render(Math.max(0,Math.min(0.999,t))*TOTAL); };
+  window.__seizePreview = ()=>{ frozen=true; cancelAnimationFrame(raf); seized=true; document.body.classList.add("seized"); render(T_HOLD+460); };
+  window.__live = ()=>{ frozen=false; seized=false; document.body.classList.remove("seized"); frozenMs=0; play(); };
+})();
+</script>
+</body>
+</html>
