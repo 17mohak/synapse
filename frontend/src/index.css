@@ -64,6 +64,8 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Symmetric sine in-out for continuous, breathing (alternating) idle motion. */
+  --ease-in-out-sine: cubic-bezier(0.37, 0, 0.63, 1);
   --dur: 180ms;
   --dur-reveal: 900ms; /* the calm, expensive entrance */
 

@@ -48,11 +48,22 @@ export default function App() {
   return (
     <div className="page" ref={rootRef}>
       {/* One continuous field behind every section: soft gold/cool light that
-          drifts on scroll so the page reads as one space, not stacked slides. */}
+          drifts on scroll so the page reads as one space, not stacked slides.
+          Each glow is a scroll-parallax wrapper (writes --py) holding an inner
+          layer that breathes on a slow time clock — so even at rest the field is
+          never frozen and the whole page inhales as one instrument. The two
+          transforms live on different elements so they never collide (the same
+          discipline the hero chart uses for parallax vs. reveal). */}
       <div className="page__ambient" aria-hidden="true">
-        <span className="page__glow page__glow--1 parallax" data-depth="0.08" data-depth-max="44" />
-        <span className="page__glow page__glow--2 parallax" data-depth="0.05" data-depth-max="30" />
-        <span className="page__glow page__glow--3 parallax" data-depth="0.06" data-depth-max="34" />
+        <span className="page__glow page__glow--1 parallax" data-depth="0.08" data-depth-max="44">
+          <span className="page__glow-breath" />
+        </span>
+        <span className="page__glow page__glow--2 parallax" data-depth="0.05" data-depth-max="30">
+          <span className="page__glow-breath" />
+        </span>
+        <span className="page__glow page__glow--3 parallax" data-depth="0.06" data-depth-max="34">
+          <span className="page__glow-breath" />
+        </span>
       </div>
 
       <div className="page__shell" ref={shellRef}>
