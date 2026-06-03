@@ -203,60 +203,100 @@
   color: var(--ink);
 }
 
-/* ── The stage: the instrument is the page (land-5, Instrument First) ──────────
-   The first viewport IS the instrument: the chart runs full content width and
-   card-less (its marks sit on the page's own stage, no panel), and the headline is
-   set INTO the instrument's empty lower-left, so the copy emerges from the artifact
-   rather than sitting beside it. The pull-quote and fates follow as the supporting
-   narrative. The artifact is the unquestioned centre of gravity in the first
-   3 seconds, motion or no motion. */
+/* ── The synthesis (land-6): the instrument is the environment ─────────────────
+   land-5 FORM (full-width, card-less, dominant) + land-4 BEHAVIOUR (it persists
+   through the descent), fused by folding the narrative rail INTO the chart's own
+   negative space rather than beside it. The chart is a full-width sticky stage
+   (pinned for the whole stage scroll, releasing into the fates); the narrative
+   beats scroll through its empty left region. The rail and the instrument occupy
+   the SAME grid cell — the rail (z2) overlays the chart (z1) — so the words move
+   while the instrument stays. Native sticky + native scroll: no scroll-jacking,
+   no shrink-to-companion, no chart edits. */
 .stage {
-  display: block;
+  display: grid;
 }
-.instrument {
-  position: relative;
-  padding-top: clamp(8px, 2vh, 30px);
+.stage__rail,
+.stage__instrument {
+  grid-area: 1 / 1; /* one cell: the rail overlays the chart */
+  min-width: 0;
+}
+/* The instrument is exactly one viewport tall, so it stays pinned for the entire
+   stage scroll-through and releases precisely as the rail (and the stage) ends. */
+.stage__instrument {
+  z-index: 1;
+  align-self: start;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .instrument__chart {
   width: 100%;
 }
-/* The headline, set into the instrument's lower-left negative space. The early,
-   low-probability region of the plot is reliably empty for any prompt (the model
-   has not committed yet), and the standing words resolve on the right — so the
-   words occupy the instrument's own quiet space, never the rising lines. */
-.instrument__title {
-  position: absolute;
-  left: 0;
-  bottom: clamp(58px, 10vh, 124px);
+.stage__rail {
+  position: relative;
   z-index: 2;
-  max-width: min(50%, 30ch);
-  pointer-events: none; /* let the plot breathe; interactive bits re-enable below */
+  pointer-events: none; /* the chart breathes through; interactive bits re-enable */
 }
-/* A soft scrim: the page's own background colour, locally strengthened and fading
-   out to the right and edges, so the words stay legible where the faint early
-   trajectories cross behind them. Not a panel — the lines still read through it. */
-.instrument__title::before {
+/* Each narrative beat takes one screen of scroll and lives in the chart's left
+   negative space — the early low-probability region is reliably empty for any
+   prompt, and the standing words resolve on the right, so the words never cross
+   the rising lines or the answer. */
+.stage__beat {
+  position: relative;
+  width: min(44%, 32ch);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.stage__beat--hero {
+  justify-content: flex-end;
+  padding-bottom: clamp(56px, 11vh, 132px);
+}
+.stage__beat--quote {
+  justify-content: center;
+}
+/* The scrim: the page's own background colour, locally strengthened and fading out
+   to the right, so each beat stays legible where the faint early trajectories pass
+   behind it. Not a panel — the lines still read at the edges. This is the
+   make-or-break for the synthesis. */
+.stage__beat::before {
   content: "";
   position: absolute;
-  inset: -36px -130px -26px -64px;
+  inset: -8vh -34% -8vh -16%;
   z-index: -1;
   background: radial-gradient(
-    118% 94% at 20% 46%,
-    oklch(0.115 0.006 264 / 0.95),
-    oklch(0.115 0.006 264 / 0) 70%
+    120% 76% at 27% 50%,
+    oklch(0.115 0.006 264 / 0.97),
+    oklch(0.115 0.006 264 / 0.78) 36%,
+    oklch(0.115 0.006 264 / 0) 72%
   );
   pointer-events: none;
 }
-.instrument__title .hero {
-  min-height: 0;
-  padding: 0;
-  display: block;
+.hero,
+.quote {
+  pointer-events: none;
 }
 .hero__cta {
   pointer-events: auto;
 }
 .hero__copy {
   max-width: 30ch;
+}
+/* The quote, now a left beat in the gutter (it was a centred section in land-5). */
+.stage__beat--quote .quote {
+  padding: 0;
+  text-align: left;
+}
+.stage__beat--quote .quote__text {
+  margin: 0;
+  max-width: 18ch;
+}
+.stage__beat--quote .quote__body {
+  margin: clamp(18px, 2.4vw, 26px) 0 0;
+  max-width: 40ch;
 }
 .hero__title {
   font-family: var(--font-serif);
@@ -962,23 +1002,48 @@
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 880px) {
-  /* The overlay would crowd a short chart: stack the headline above the instrument
-     instead, and re-enable its pointer events. */
-  .instrument {
-    padding-top: clamp(16px, 4vh, 32px);
-  }
-  .instrument__title {
-    position: static;
-    max-width: none;
-    margin-bottom: clamp(16px, 4vw, 28px);
-    pointer-events: auto;
-  }
-  .instrument__chart {
-    order: 2;
-  }
-  .instrument {
+  /* The gutter-overlay needs a wide chart and its empty left region; on narrow
+     screens the chart is short, so the synthesis collapses to a clean instrument-
+     first stack: chart, then headline, then quote. No overlay, no sticky, no scrim. */
+  .stage {
     display: flex;
     flex-direction: column;
+  }
+  .stage__instrument {
+    order: -1; /* chart first (instrument-first), then the rail beats */
+    position: static;
+    height: auto;
+  }
+  .stage__rail {
+    pointer-events: auto;
+  }
+  .stage__beat {
+    width: auto;
+    min-height: auto;
+  }
+  .stage__beat--hero {
+    justify-content: flex-start;
+    padding-bottom: 0;
+    padding-top: clamp(16px, 4vw, 28px);
+  }
+  .stage__beat::before {
+    display: none;
+  }
+  .hero,
+  .quote {
+    pointer-events: auto;
+  }
+  .stage__beat--quote .quote {
+    text-align: center;
+    padding-block: clamp(28px, 6vw, 48px);
+  }
+  .stage__beat--quote .quote__text {
+    margin: 0 auto;
+    max-width: 22ch;
+  }
+  .stage__beat--quote .quote__body {
+    margin: clamp(18px, 3vw, 26px) auto 0;
+    max-width: 52ch;
   }
   .hero__copy {
     max-width: none;
