@@ -1,7 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 
 import { useStore } from "../state/store";
-import HeroChart from "./HeroChart";
 
 const v = (i: number) => ({ "--i": i }) as CSSProperties;
 
@@ -9,6 +8,9 @@ const v = (i: number) => ({ "--i": i }) as CSSProperties;
 // and its measured moat are genuine, not a placeholder string.
 const BOOT_PROMPT = "Water is made of hydrogen and";
 
+// The hero is the opening narrative beat of the stage (the artifact itself lives
+// in the sticky spine — see Stage). This component owns only the copy and the
+// causal boot trigger.
 export default function Hero() {
   const setFocusMode = useStore((s) => s.setFocusMode);
   const runAnalyze = useStore((s) => s.runAnalyze);
@@ -45,7 +47,7 @@ export default function Hero() {
   }, [runAnalyze]);
 
   return (
-    <section className="hero" id="explore">
+    <div className="hero" id="explore">
       <div className="hero__copy">
         <h1 className="hero__title">
           <span className="reveal" style={v(1)}>
@@ -85,16 +87,6 @@ export default function Hero() {
           </span>
         </button>
       </div>
-
-      {/* Parallax wrapper (drifts on scroll) stays distinct from the reveal
-          wrapper (entrance), so the two transforms never collide. The artifact
-          materializes in place (see .hero__chart-reveal in App.css) at --i 3, so
-          the chassis is on and armed before the headline ignites it. */}
-      <div className="hero__chart parallax" data-depth="0.045" data-depth-max="20">
-        <div className="hero__chart-reveal reveal" style={v(3)}>
-          <HeroChart />
-        </div>
-      </div>
-    </section>
+    </div>
   );
 }

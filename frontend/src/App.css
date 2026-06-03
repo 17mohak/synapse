@@ -124,8 +124,7 @@
 
 /* Shared content frame */
 .nav,
-.hero,
-.quote,
+.stage,
 .fates,
 .foot__inner {
   width: 100%;
@@ -204,18 +203,49 @@
   color: var(--ink);
 }
 
-/* ── Hero ────────────────────────────────────────────────────────────────── */
-.hero {
+/* ── The stage: the artifact is the spine ─────────────────────────────────────
+   The instrument stays present (native position: sticky — no scroll-jacking, no
+   chart edits) in the right column while the narrative — the hero copy, then the
+   pull-quote — scrolls past in the left rail. The artifact spans both narrative
+   beats, so it is on screen from the headline through the pull-quote and only
+   releases as the Fates band begins: one continuous object you descend through,
+   not a hero followed by stacked sections. */
+.stage {
   display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
-  gap: clamp(28px, 4.5vw, 80px);
-  align-items: center;
-  min-height: min(82vh, 780px);
-  padding-top: clamp(28px, 5vh, 72px);
-  padding-bottom: clamp(56px, 10vh, 128px);
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+  column-gap: clamp(28px, 4.5vw, 80px);
+  align-items: stretch;
+}
+.stage > .hero {
+  grid-column: 1;
+  grid-row: 1;
+}
+.stage > .quote {
+  grid-column: 1;
+  grid-row: 2;
+}
+.stage__artifact {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-width: 0;
+}
+/* The spine. The instrument holds at the top third of the viewport while the rail
+   scrolls beneath it, then releases when the artifact column ends. */
+.stage__sticky {
+  position: sticky;
+  top: clamp(80px, 12vh, 140px);
+}
+
+/* ── Hero (the opening narrative beat) ───────────────────────────────────────── */
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: min(86vh, 880px);
+  padding-block: clamp(28px, 6vh, 80px);
 }
 .hero__copy {
-  max-width: 28ch;
+  max-width: 30ch;
 }
 .hero__title {
   font-family: var(--font-serif);
@@ -629,21 +659,23 @@
   line-height: 1.5;
 }
 
-/* ── Pull-quote ──────────────────────────────────────────────────────────── */
+/* ── Pull-quote (the second narrative beat, in the rail beside the instrument) ── */
 .quote {
-  text-align: center;
-  padding-top: clamp(40px, 8vh, 96px);
-  padding-bottom: clamp(36px, 6vh, 72px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: min(82vh, 820px);
+  padding-block: clamp(40px, 8vh, 110px);
 }
 .quote__text {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(1.7rem, 3.6vw, 2.7rem);
-  line-height: 1.18;
+  font-size: clamp(1.9rem, 3.4vw, 2.9rem);
+  line-height: 1.16;
   letter-spacing: -0.01em;
   color: var(--ink);
-  margin: 0 auto;
-  max-width: 22ch;
+  margin: 0;
+  max-width: 20ch;
   text-wrap: balance;
 }
 .quote__text em {
@@ -651,10 +683,10 @@
   color: var(--accent);
 }
 .quote__body {
-  margin: clamp(20px, 3vw, 28px) auto 0;
-  max-width: 56ch;
+  margin: clamp(20px, 3vw, 28px) 0 0;
+  max-width: 46ch;
   color: var(--muted);
-  font-size: 1.02rem;
+  font-size: 1.04rem;
   line-height: 1.7;
 }
 
@@ -959,13 +991,31 @@
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 880px) {
-  .hero {
+  /* The spine collapses: one column, the instrument returns to the flow between
+     the hero copy and the quote (source order), sticky disabled. */
+  .stage {
     grid-template-columns: 1fr;
-    gap: clamp(28px, 6vw, 44px);
-    padding-top: clamp(32px, 6vh, 64px);
+    row-gap: clamp(24px, 5vw, 40px);
+  }
+  .stage > .hero,
+  .stage > .quote,
+  .stage__artifact {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .stage__sticky {
+    position: static;
+  }
+  .hero {
+    min-height: auto;
+    padding-block: clamp(24px, 5vh, 48px);
   }
   .hero__copy {
     max-width: none;
+  }
+  .quote {
+    min-height: auto;
+    padding-block: clamp(28px, 5vh, 56px);
   }
   .nav__links {
     gap: 18px;

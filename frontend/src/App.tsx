@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import SiteNav from "./landing/SiteNav";
-import Hero from "./landing/Hero";
-import PullQuote from "./landing/PullQuote";
+import Stage from "./landing/Stage";
 import Fates from "./landing/Fates";
 import SiteFooter from "./landing/SiteFooter";
 import FocusOverlay from "./landing/FocusOverlay";
@@ -53,8 +52,7 @@ export default function App() {
       <div className="page__shell" ref={shellRef}>
         <SiteNav />
         <main className="page__main">
-          <Hero />
-          <PullQuote />
+          <Stage />
           <Fates />
         </main>
         <SiteFooter />
