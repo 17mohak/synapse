@@ -231,6 +231,53 @@
 }
 .hero__accent {
   color: var(--accent);
+  /* A faint resting luminance — the gold word is the conviction/pilot light. */
+  text-shadow: 0 0 22px oklch(0.85 0.14 80 / 0.18);
+}
+
+/* ── Boot motion roles ────────────────────────────────────────────────────────
+   The hero powers on as ONE sequence with distinct physics per role, not a uniform
+   stagger of identical slides. Chrome fades without travel (subordinate); the
+   headline text still rises; the gold word ignites in place; the artifact
+   materializes at its destination (no paragraph-slide). All inherit the base
+   .reveal machinery + reduced-motion guards. */
+
+/* Chrome (nav, CTA): opacity only — it is not the event. */
+.reveal--chrome {
+  --reveal-shift: 0px;
+}
+
+/* The ignition word: no travel; lands as a held later beat (its --i) and glows up
+   like a pilot light coming on. Its reveal completing triggers the analysis. */
+.js-motion .reveal--ignite {
+  --reveal-shift: 0px;
+  text-shadow: 0 0 0 oklch(0.85 0.14 80 / 0);
+}
+.js-motion .reveal--ignite.is-in {
+  text-shadow: 0 0 22px oklch(0.85 0.14 80 / 0.18);
+  transition:
+    opacity var(--dur-reveal) var(--ease-out-expo),
+    transform var(--dur-reveal) var(--ease-out-expo),
+    text-shadow 1200ms var(--ease-out-expo);
+  transition-delay: calc(var(--i) * 90ms);
+}
+
+/* The artifact does not slide in like a paragraph: it materializes at its
+   destination (opacity + a small settle), so it reads as a chassis powering on in
+   place — the destination of the sequence, not another component arriving. The
+   higher-specificity selector overrides the base .reveal translate. */
+.js-motion .hero__chart-reveal.reveal {
+  opacity: 0;
+  transform: scale(0.985);
+  transform-origin: 56% 46%;
+}
+.js-motion .hero__chart-reveal.reveal.is-in {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 1100ms var(--ease-out-expo),
+    transform 1300ms var(--ease-out-expo);
+  transition-delay: calc(var(--i) * 90ms);
 }
 .hero__lede {
   margin: clamp(22px, 3vw, 32px) 0 0;
@@ -287,18 +334,53 @@
   outline-offset: 4px;
 }
 
-/* ── The hero chart card ─────────────────────────────────────────────────── */
+/* ── The hero chart: an observatory window, not a card ────────────────────────
+   The artifact reads as an aperture cut INTO the page rather than a panel laid on
+   top of it. Three moves do the work, all static (no frame-draw animation):
+   (1) the fill sits at ~page depth and is translucent, so the breathing ambient
+   field shows THROUGH the window; (2) the elevation drop-shadow is replaced by an
+   inset vignette, so the instrument recedes into depth instead of floating above
+   the surface; (3) the border becomes a lit threshold (the ::before lip), brighter
+   at the top edge and dissolving downward, so light catches the aperture rather
+   than a box enclosing a component. Subtle pixels, large perceived shift. */
 .card {
   position: relative;
-  border-radius: 18px;
-  border: 1px solid oklch(0.8 0.12 80 / 0.14);
+  isolation: isolate;
+  border-radius: 16px;
+  border: 1px solid oklch(0.8 0.1 80 / 0.06);
   background:
-    linear-gradient(180deg, oklch(0.215 0.008 264 / 0.74), oklch(0.155 0.006 264 / 0.82));
+    linear-gradient(180deg, oklch(0.165 0.007 264 / 0.5), oklch(0.125 0.006 264 / 0.4));
   box-shadow:
-    0 1px 0 oklch(1 0 0 / 0.05) inset,
-    0 54px 120px -52px oklch(0 0 0 / 0.92);
+    inset 0 1px 0 oklch(1 0 0 / 0.04),
+    inset 0 24px 64px -44px oklch(0 0 0 / 0.85),
+    inset 0 -44px 96px -64px oklch(0 0 0 / 0.55),
+    0 28px 76px -64px oklch(0 0 0 / 0.7);
   padding: clamp(20px, 2.3vw, 30px) clamp(20px, 2.3vw, 32px) clamp(18px, 1.9vw, 24px);
   overflow: hidden;
+}
+/* The aperture lip: a hairline that catches warm light along the top edge and
+   fades down the sides — the threshold of the window, never a containing outline.
+   Drawn as a masked 1px gradient ring so only the border band is painted. */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    175deg,
+    oklch(0.86 0.12 80 / 0.4),
+    oklch(0.86 0.12 80 / 0) 42%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 /* The expand control: a quiet corner affordance that opens the same deep dive. */
 .card__expand {
@@ -516,22 +598,26 @@
   place-items: center;
   min-height: clamp(340px, 42vh, 470px);
 }
+/* Before signal: the window is powered but dark — a still warm pool that breathes
+   on the same clock as the field, reading as the instrument armed and waiting, not
+   a loading skeleton. The breath collapses to a steady rest under reduced motion. */
 .card__shimmer {
   position: absolute;
-  inset: 8% 4%;
+  inset: 10% 8%;
   border-radius: 10px;
-  background: linear-gradient(
-    100deg,
-    oklch(1 0 0 / 0) 30%,
-    oklch(1 0 0 / 0.04) 50%,
-    oklch(1 0 0 / 0) 70%
+  background: radial-gradient(
+    62% 78% at 50% 58%,
+    oklch(0.72 0.1 80 / 0.06),
+    transparent 72%
   );
-  background-size: 220% 100%;
-  animation: card-shimmer 1.6s var(--ease-out) infinite;
+  animation: card-arming 4.2s var(--ease-in-out-sine) infinite alternate;
 }
-@keyframes card-shimmer {
+@keyframes card-arming {
+  from {
+    opacity: 0.5;
+  }
   to {
-    background-position: -120% 0;
+    opacity: 1;
   }
 }
 .card__note {

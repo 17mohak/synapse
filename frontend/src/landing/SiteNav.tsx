@@ -10,7 +10,7 @@ const LINKS = [
 
 export default function SiteNav() {
   return (
-    <header className="nav reveal" style={{ "--i": 0 } as CSSProperties}>
+    <header className="nav reveal reveal--chrome" style={{ "--i": 0 } as CSSProperties}>
       <a className="nav__brand" href="#explore" aria-label="Synapse, home">
         <SynapseLogo size={26} className="nav__logo" />
         <span className="nav__wordmark">Synapse</span>
