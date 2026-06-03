@@ -3,7 +3,7 @@ import * as d3 from "d3";
 
 import type { AnalyzeResponse, TokenTrajectory } from "../api/client";
 import { useStore } from "../state/store";
-import { deriveClimbEvents, composeThesis, deriveVerdict } from "./climbEvents";
+import { deriveClimbEvents, composeThesis, composeCandidateStory, deriveVerdict } from "./climbEvents";
 import ClimbScrubber from "./ClimbScrubber";
 import ClimbReadout from "./ClimbReadout";
 import "./ClimbView.css";
@@ -45,12 +45,17 @@ export default function ClimbView({ result, variant = "default", chrome = true, 
   // drives another's.
   const timerRef = useRef<ReturnType<typeof d3.timer> | null>(null);
   const sweepRef = useRef<(() => void) | null>(null);
+  // Applies the hover-interrogation visuals (focus the picked line, recede the
+  // rest, place the marker at the scrubber layer). Kept per-instance.
+  const hoverRef = useRef<((token: string | null, layer: number) => void) | null>(null);
   const clipId = useId().replace(/:/g, "");
 
   const playheadLayer = useStore((s) => s.playheadLayer);
   const playState = useStore((s) => s.playState);
+  const hoveredToken = useStore((s) => s.hoveredToken);
   const setPlayheadLayer = useStore((s) => s.setPlayheadLayer);
   const setPlayState = useStore((s) => s.setPlayState);
+  const setHoveredToken = useStore((s) => s.setHoveredToken);
 
   const events = useMemo(() => deriveClimbEvents(result.trajectories), [result]);
   const thesis = events.winner ? composeThesis(events) : null;
@@ -66,6 +71,10 @@ export default function ClimbView({ result, variant = "default", chrome = true, 
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
+
+    // A new analysis clears any stale interrogation (the old token need not exist
+    // here). Replay does not run this effect, so a held hover survives a replay.
+    if (useStore.getState().hoveredToken !== null) setHoveredToken(null);
 
     const trajectories = result.trajectories;
     const nLayers = trajectories[0]?.probs.length ?? 12;
@@ -289,6 +298,68 @@ export default function ClimbView({ result, variant = "default", chrome = true, 
     };
     applyRef.current = applyLayer;
 
+    // --- Hover interrogation. A forgiving transparent overlay picks the nearest
+    // drawn line at the cursor; the focus + marker then track the SCRUBBER layer,
+    // so hover chooses the candidate and the scrubber chooses the moment. ---
+    const hoverG = g.append("g").attr("class", "climb-hover").style("opacity", 0);
+    const hoverDot = hoverG.append("circle").attr("class", "climb-hover__dot").attr("r", 4.5);
+    const hoverLabel = hoverG.append("text").attr("class", "climb-hover__label").attr("dominant-baseline", "middle");
+    const yOf = (t: TokenTrajectory, li: number) => y(t.probs[li] ?? 0);
+
+    const applyHover = (token: string | null, layerF: number) => {
+      const li = Math.max(0, Math.min(last, Math.round(layerF)));
+      const hovered = token ? ordered.find((t) => t.token === token) : undefined;
+      revealG.classed("has-hover", !!hovered);
+      ghostG.classed("has-hover", !!hovered);
+      revealG.selectAll<SVGPathElement, TokenTrajectory>("path.climb-line").classed("is-hovered", (d) => !!hovered && d.token === token);
+      ghostG.selectAll<SVGPathElement, TokenTrajectory>("path.climb-line").classed("is-hovered", (d) => !!hovered && d.token === token);
+      if (hovered) {
+        const hx = x(li);
+        const hy = yOf(hovered, li);
+        const rightish = hx > innerW * 0.82;
+        hoverG.classed("is-winner", hovered.token === winner?.token).style("opacity", 1);
+        hoverDot.attr("cx", hx).attr("cy", hy);
+        hoverLabel
+          .attr("x", hx)
+          .attr("y", hy)
+          .attr("text-anchor", rightish ? "end" : "start")
+          .attr("dx", rightish ? -9 : 9)
+          .text(prose(hovered.token));
+      } else {
+        hoverG.style("opacity", 0);
+      }
+    };
+    hoverRef.current = applyHover;
+
+    // The pick rect sits on top (transparent fill still captures pointer events).
+    // Nearest drawn line by vertical distance at the cursor layer, within a
+    // generous threshold, so thin lines are easy and pleasant to grab.
+    const HOVER_THRESHOLD = 46;
+    g.append("rect")
+      .attr("class", "climb-hover__overlay")
+      .attr("x", 0)
+      .attr("y", -12)
+      .attr("width", innerW)
+      .attr("height", innerH + 24)
+      .on("pointermove", (event: PointerEvent) => {
+        const [mx, my] = d3.pointer(event);
+        const li = Math.max(0, Math.min(last, Math.round(x.invert(mx))));
+        let best: TokenTrajectory | null = null;
+        let bestDy = Infinity;
+        for (const t of ordered) {
+          const dy = Math.abs(yOf(t, li) - my);
+          if (dy < bestDy) {
+            bestDy = dy;
+            best = t;
+          }
+        }
+        const tok = best && bestDy <= HOVER_THRESHOLD ? best.token : null;
+        if (useStore.getState().hoveredToken !== tok) setHoveredToken(tok);
+      })
+      .on("pointerleave", () => {
+        if (useStore.getState().hoveredToken !== null) setHoveredToken(null);
+      });
+
     // The layer sweep, packaged so it can run once on build AND be replayed on
     // demand (the deep-dive transport). A fresh run cancels any in-flight timer.
     // Under reduced motion it renders the resolved state with no animation.
@@ -338,6 +409,26 @@ export default function ClimbView({ result, variant = "default", chrome = true, 
     }
   }, [playheadLayer, playState, result]);
 
+  // --- Effect C: hover interrogation. The focus + marker follow the hovered
+  // candidate AND the scrubber layer, so the instrument answers candidate-and-time. ---
+  useEffect(() => {
+    hoverRef.current?.(hoveredToken, playheadLayer);
+  }, [hoveredToken, playheadLayer]);
+
+  // The interrogation readout: the hovered candidate's layer-aware state (rank +
+  // probability at the scrubber layer) plus its arc across the whole pass.
+  const nLayersR = result.trajectories[0]?.probs.length ?? 12;
+  const L = Math.max(0, Math.min(nLayersR - 1, playheadLayer));
+  const hoveredTraj = hoveredToken ? result.trajectories.find((t) => t.token === hoveredToken) : undefined;
+  const hoveredStory = hoveredToken && hoveredTraj ? composeCandidateStory(hoveredTraj, events) : null;
+  const lensRank = hoveredToken
+    ? (result.logit_lens[L]?.predictions.findIndex((p) => p.token === hoveredToken) ?? -1)
+    : -1;
+  const hoveredProb = hoveredTraj
+    ? (hoveredTraj.probs[L] ?? 0)
+    : (result.logit_lens[L]?.predictions.find((p) => p.token === hoveredToken)?.prob ?? 0);
+  const isWinnerHover = !!hoveredToken && hoveredToken === events.winner?.token;
+
   return (
     <section className={`climb climb--${variant}`} aria-label="The Climb">
       {chrome && (
@@ -360,14 +451,30 @@ export default function ClimbView({ result, variant = "default", chrome = true, 
       </div>
       {chrome && (
         <>
-          {/* The thesis is the payoff, not the premise: it stays hidden through the
-              sweep and arrives once the race resolves, confirming what the standing
-              already showed. aria-live announces it for screen readers. */}
+          {/* The payoff slot. At rest it holds the thesis (confirmation, never a
+              spoiler). On hover it becomes the interrogation: who this candidate is,
+              where it stands at the scrubber layer, and the story of its whole arc.
+              aria-live announces both for screen readers. */}
           <p
-            className={`climb__thesis${revealed ? " climb__thesis--revealed" : ""}`}
+            className={`climb__thesis${revealed || hoveredToken ? " climb__thesis--revealed" : ""}${hoveredToken ? " climb__thesis--interrogate" : ""}`}
             aria-live="polite"
           >
-            {revealed && thesis ? thesis : ""}
+            {hoveredToken ? (
+              <>
+                <span className={`climb__cand-word${isWinnerHover ? " is-winner" : ""}`}>
+                  {prose(hoveredToken)}
+                </span>
+                <span className="climb__cand-meta">
+                  layer {L} · {lensRank >= 0 ? `rank ${lensRank + 1}` : "outside top 5"} ·{" "}
+                  {(hoveredProb * 100).toFixed(1)}%
+                </span>
+                {hoveredStory && <span className="climb__cand-story">{hoveredStory}</span>}
+              </>
+            ) : revealed && thesis ? (
+              thesis
+            ) : (
+              ""
+            )}
           </p>
           <ClimbScrubber result={result} transport onReplay={() => sweepRef.current?.()} />
           {readout && <ClimbReadout result={result} />}

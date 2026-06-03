@@ -134,6 +134,35 @@ export function composeThesis(ev: ClimbEvents): string {
     : `${cap(W)} edges ahead at layer ${leadLayer} and holds a narrow lead, finishing at ${finalPct}.`;
 }
 
+/**
+ * The story of one candidate, for hover interrogation: not its current value (the
+ * readout shows that, layer-aware) but its arc across the whole forward pass —
+ * when it emerged, whether it ever led, where it peaked, and whether it then
+ * collapsed. Composed from the same event core so it can never contradict the
+ * chart. Researcher voice, one sentence.
+ */
+export function composeCandidateStory(t: TokenTrajectory, ev: ClimbEvents): string {
+  const led: number[] = [];
+  ev.perLayerLeader.forEach((tok, l) => {
+    if (tok === t.token) led.push(l);
+  });
+  const leadsEnd = ev.perLayerLeader[ev.perLayerLeader.length - 1] === t.token;
+  const collapsed = t.peak >= 0.3 && t.finalProb < t.peak * 0.4;
+  const emergedAt = t.probs.findIndex((p) => p >= 0.02);
+  const W = cap(prose(t.token));
+
+  let lead: string;
+  if (leadsEnd) lead = led[0] <= 1 ? "led from the opening layers" : `took the lead at layer ${led[0]}`;
+  else if (led.length) lead = `briefly led at layer ${led[0]}`;
+  else lead = "never led";
+
+  let arc = `peaked at ${asPct(t.peak)} (layer ${t.peakLayer})`;
+  if (collapsed) arc += `, then collapsed to ${asPct(t.finalProb)}`;
+
+  const emerge = emergedAt > 1 && (led[0] ?? 99) !== 0 ? `emerged at layer ${emergedAt}, ` : "";
+  return `${W} ${emerge}${lead}; it ${arc}.`;
+}
+
 export function deriveClimbEvents(trajectories: TokenTrajectory[]): ClimbEvents {
   const n = trajectories[0]?.probs.length ?? 0;
 

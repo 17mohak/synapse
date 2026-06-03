@@ -21,7 +21,9 @@
    lands once the race has resolved (revealed), confirming the standing. */
 .climb__thesis {
   margin: 18px 0 0;
-  min-height: 1.35em; /* reserve space so the layout doesn't jump on reveal */
+  /* Reserve two lines so neither the thesis reveal nor the (taller) hover
+     interrogation jumps the scrubber below it. */
+  min-height: 2.8em;
   max-width: 72ch;
   color: var(--ink);
   font-size: var(--text-lg);
@@ -327,4 +329,76 @@ text.climb-tick--active {
   font-family: var(--font-mono);
   font-size: 10.5px;
   fill: var(--muted);
+}
+
+/* ── Hover interrogation ─────────────────────────────────────────────────────
+   Forgiving pick (transparent rect on top), the focused candidate brought
+   forward and the rest receded. Defined after the tier / ignite / resolved rules
+   so the focus wins on stroke-opacity. Calm and scientific, never flashy. */
+.climb-hover__overlay {
+  fill: transparent;
+  pointer-events: all;
+  cursor: crosshair;
+}
+.climb-hover {
+  pointer-events: none;
+  transition: opacity 160ms var(--ease-out);
+}
+.climb-hover__dot {
+  fill: var(--ink);
+}
+.climb-hover.is-winner .climb-hover__dot {
+  fill: var(--accent);
+}
+.climb-hover__label {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  fill: var(--ink);
+}
+.climb-hover.is-winner .climb-hover__label {
+  fill: var(--accent);
+}
+
+.climb-reveal.has-hover .climb-line--solid:not(.is-hovered) {
+  stroke-opacity: 0.12;
+}
+.climb-reveal.has-hover .climb-line--solid.is-hovered {
+  stroke-opacity: 1;
+  stroke-width: 2.6;
+}
+.climb-ghost.has-hover .climb-line--ghost:not(.is-hovered) {
+  stroke-opacity: 0.05;
+}
+.climb-ghost.has-hover .climb-line--ghost.is-hovered {
+  stroke-opacity: 0.34;
+}
+
+/* The interrogation readout in the payoff slot: token in the serif voice, the
+   layer-aware measure in mono, the candidate's arc as a quiet sub-line. */
+.climb__thesis--interrogate {
+  font-weight: 400;
+}
+.climb__cand-word {
+  font-family: var(--font-serif);
+  font-size: 1.55rem;
+  line-height: 1;
+  color: var(--ink);
+  margin-right: 0.5em;
+}
+.climb__cand-word.is-winner {
+  color: var(--accent);
+}
+.climb__cand-meta {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.climb__cand-story {
+  display: block;
+  margin-top: 7px;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.5;
 }

@@ -52,7 +52,22 @@
   grid-template-columns: 14px minmax(0, auto) minmax(40px, 1fr) 50px;
   align-items: center;
   gap: 10px;
+  padding: 3px 8px;
+  margin: -3px -8px;
+  border-radius: 7px;
+  cursor: default;
   will-change: transform;
+  transition: background 200ms var(--ease-out);
+}
+/* Cross-light with the chart: the interrogated candidate's row lifts. */
+.belief.is-hovered {
+  background: oklch(1 0 0 / 0.05);
+}
+.belief.is-hovered .belief__word {
+  color: var(--ink);
+}
+.belief.is-hovered.is-leader .belief__word {
+  color: var(--accent);
 }
 
 .belief__trend {

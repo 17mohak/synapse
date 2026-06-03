@@ -25,12 +25,16 @@ interface SynapseState {
   /** Deep-dive: the landing chart card has been expanded into the focused
    *  full-instrument overlay. The overlay owns the open/close morph. */
   focusMode: boolean;
+  /** The candidate token currently being interrogated (hovered on the chart or
+   *  the belief leaderboard), or null. Shared so the chart and rail cross-light. */
+  hoveredToken: string | null;
 
   runAnalyze: (prompt: string) => Promise<void>;
   setSelectedLayer: (layer: number | null) => void;
   setPlayheadLayer: (layer: number) => void;
   setPlayState: (state: "idle" | "sweeping") => void;
   setFocusMode: (on: boolean) => void;
+  setHoveredToken: (token: string | null) => void;
 }
 
 const LAST_LAYER = 11; // GPT-2 small: 12 layers (0..11). The scrubber rests here.
@@ -44,6 +48,7 @@ export const useStore = create<SynapseState>((set) => ({
   playState: "idle",
   analyzedPrompt: null,
   focusMode: false,
+  hoveredToken: null,
 
   runAnalyze: async (prompt: string) => {
     const trimmed = prompt.trim();
@@ -75,4 +80,5 @@ export const useStore = create<SynapseState>((set) => ({
   setPlayheadLayer: (layer) => set({ playheadLayer: layer }),
   setPlayState: (state) => set({ playState: state }),
   setFocusMode: (on) => set({ focusMode: on }),
+  setHoveredToken: (token) => set({ hoveredToken: token }),
 }));

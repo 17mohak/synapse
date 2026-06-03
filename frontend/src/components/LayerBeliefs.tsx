@@ -30,6 +30,8 @@ interface Row {
 // dump. Reads the same playhead the chart and scrubber share.
 export default function LayerBeliefs({ result }: LayerBeliefsProps) {
   const playheadLayer = useStore((s) => s.playheadLayer);
+  const hoveredToken = useStore((s) => s.hoveredToken);
+  const setHoveredToken = useStore((s) => s.setHoveredToken);
   const nLayers = result.logit_lens.length;
   const L = Math.max(0, Math.min(nLayers - 1, playheadLayer));
 
@@ -107,7 +109,9 @@ export default function LayerBeliefs({ result }: LayerBeliefsProps) {
           <li
             key={r.token}
             data-token={r.token}
-            className={`belief${r.isLeader ? " is-leader" : ""}`}
+            className={`belief${r.isLeader ? " is-leader" : ""}${r.token === hoveredToken ? " is-hovered" : ""}`}
+            onMouseEnter={() => setHoveredToken(r.token)}
+            onMouseLeave={() => setHoveredToken(null)}
           >
             <span
               className={`belief__trend belief__trend--${r.trend}${r.justLead ? " is-justlead" : ""}`}
