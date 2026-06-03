@@ -203,46 +203,57 @@
   color: var(--ink);
 }
 
-/* ── The stage: the artifact is the spine ─────────────────────────────────────
-   The instrument stays present (native position: sticky — no scroll-jacking, no
-   chart edits) in the right column while the narrative — the hero copy, then the
-   pull-quote — scrolls past in the left rail. The artifact spans both narrative
-   beats, so it is on screen from the headline through the pull-quote and only
-   releases as the Fates band begins: one continuous object you descend through,
-   not a hero followed by stacked sections. */
+/* ── The stage: the instrument is the page (land-5, Instrument First) ──────────
+   The first viewport IS the instrument: the chart runs full content width and
+   card-less (its marks sit on the page's own stage, no panel), and the headline is
+   set INTO the instrument's empty lower-left, so the copy emerges from the artifact
+   rather than sitting beside it. The pull-quote and fates follow as the supporting
+   narrative. The artifact is the unquestioned centre of gravity in the first
+   3 seconds, motion or no motion. */
 .stage {
-  display: grid;
-  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
-  column-gap: clamp(28px, 4.5vw, 80px);
-  align-items: stretch;
+  display: block;
 }
-.stage > .hero {
-  grid-column: 1;
-  grid-row: 1;
+.instrument {
+  position: relative;
+  padding-top: clamp(8px, 2vh, 30px);
 }
-.stage > .quote {
-  grid-column: 1;
-  grid-row: 2;
+.instrument__chart {
+  width: 100%;
 }
-.stage__artifact {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  min-width: 0;
+/* The headline, set into the instrument's lower-left negative space. The early,
+   low-probability region of the plot is reliably empty for any prompt (the model
+   has not committed yet), and the standing words resolve on the right — so the
+   words occupy the instrument's own quiet space, never the rising lines. */
+.instrument__title {
+  position: absolute;
+  left: 0;
+  bottom: clamp(58px, 10vh, 124px);
+  z-index: 2;
+  max-width: min(50%, 30ch);
+  pointer-events: none; /* let the plot breathe; interactive bits re-enable below */
 }
-/* The spine. The instrument holds at the top third of the viewport while the rail
-   scrolls beneath it, then releases when the artifact column ends. */
-.stage__sticky {
-  position: sticky;
-  top: clamp(80px, 12vh, 140px);
+/* A soft scrim: the page's own background colour, locally strengthened and fading
+   out to the right and edges, so the words stay legible where the faint early
+   trajectories cross behind them. Not a panel — the lines still read through it. */
+.instrument__title::before {
+  content: "";
+  position: absolute;
+  inset: -36px -130px -26px -64px;
+  z-index: -1;
+  background: radial-gradient(
+    118% 94% at 20% 46%,
+    oklch(0.115 0.006 264 / 0.95),
+    oklch(0.115 0.006 264 / 0) 70%
+  );
+  pointer-events: none;
 }
-
-/* ── Hero (the opening narrative beat) ───────────────────────────────────────── */
-.hero {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: min(86vh, 880px);
-  padding-block: clamp(28px, 6vh, 80px);
+.instrument__title .hero {
+  min-height: 0;
+  padding: 0;
+  display: block;
+}
+.hero__cta {
+  pointer-events: auto;
 }
 .hero__copy {
   max-width: 30ch;
@@ -364,53 +375,16 @@
   outline-offset: 4px;
 }
 
-/* ── The hero chart: an observatory window, not a card ────────────────────────
-   The artifact reads as an aperture cut INTO the page rather than a panel laid on
-   top of it. Three moves do the work, all static (no frame-draw animation):
-   (1) the fill sits at ~page depth and is translucent, so the breathing ambient
-   field shows THROUGH the window; (2) the elevation drop-shadow is replaced by an
-   inset vignette, so the instrument recedes into depth instead of floating above
-   the surface; (3) the border becomes a lit threshold (the ::before lip), brighter
-   at the top edge and dissolving downward, so light catches the aperture rather
-   than a box enclosing a component. Subtle pixels, large perceived shift. */
+/* ── The instrument (land-5): the chart IS the page, no card ───────────────────
+   The panel is gone entirely — no border, no fill, no elevation, no aperture lip.
+   The chart's chrome sits directly on the page's own dark stage: the prompt is a
+   quiet top line, the transport a quiet bottom line, and the plot the dominant
+   mass between them. This is the last "thumbnail/card" tell removed; the instrument
+   is embedded in the page, not placed on top of it. */
 .card {
   position: relative;
   isolation: isolate;
-  border-radius: 16px;
-  border: 1px solid oklch(0.8 0.1 80 / 0.06);
-  background:
-    linear-gradient(180deg, oklch(0.165 0.007 264 / 0.5), oklch(0.125 0.006 264 / 0.4));
-  box-shadow:
-    inset 0 1px 0 oklch(1 0 0 / 0.04),
-    inset 0 24px 64px -44px oklch(0 0 0 / 0.85),
-    inset 0 -44px 96px -64px oklch(0 0 0 / 0.55),
-    0 28px 76px -64px oklch(0 0 0 / 0.7);
-  padding: clamp(20px, 2.3vw, 30px) clamp(20px, 2.3vw, 32px) clamp(18px, 1.9vw, 24px);
-  overflow: hidden;
-}
-/* The aperture lip: a hairline that catches warm light along the top edge and
-   fades down the sides — the threshold of the window, never a containing outline.
-   Drawn as a masked 1px gradient ring so only the border band is painted. */
-.card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    175deg,
-    oklch(0.86 0.12 80 / 0.4),
-    oklch(0.86 0.12 80 / 0) 42%
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
+  padding: 0;
 }
 /* The expand control: a quiet corner affordance that opens the same deep dive. */
 .card__expand {
@@ -561,7 +535,7 @@
 .card__body {
   position: relative;
   z-index: 1;
-  min-height: clamp(340px, 42vh, 470px);
+  min-height: clamp(420px, 58vh, 660px);
 }
 
 .card__foot {
@@ -626,7 +600,7 @@
   position: relative;
   display: grid;
   place-items: center;
-  min-height: clamp(340px, 42vh, 470px);
+  min-height: clamp(420px, 58vh, 660px);
 }
 /* Before signal: the window is powered but dark — a still warm pool that breathes
    on the same clock as the field, reading as the instrument armed and waiting, not
@@ -659,23 +633,20 @@
   line-height: 1.5;
 }
 
-/* ── Pull-quote (the second narrative beat, in the rail beside the instrument) ── */
+/* ── Pull-quote (the narrative beat below the instrument) ─────────────────────── */
 .quote {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: min(82vh, 820px);
-  padding-block: clamp(40px, 8vh, 110px);
+  text-align: center;
+  padding-block: clamp(48px, 9vh, 120px);
 }
 .quote__text {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(1.9rem, 3.4vw, 2.9rem);
+  font-size: clamp(1.8rem, 3.6vw, 2.8rem);
   line-height: 1.16;
   letter-spacing: -0.01em;
   color: var(--ink);
-  margin: 0;
-  max-width: 20ch;
+  margin: 0 auto;
+  max-width: 22ch;
   text-wrap: balance;
 }
 .quote__text em {
@@ -683,8 +654,8 @@
   color: var(--accent);
 }
 .quote__body {
-  margin: clamp(20px, 3vw, 28px) 0 0;
-  max-width: 46ch;
+  margin: clamp(20px, 3vw, 28px) auto 0;
+  max-width: 52ch;
   color: var(--muted);
   font-size: 1.04rem;
   line-height: 1.7;
@@ -991,31 +962,26 @@
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 880px) {
-  /* The spine collapses: one column, the instrument returns to the flow between
-     the hero copy and the quote (source order), sticky disabled. */
-  .stage {
-    grid-template-columns: 1fr;
-    row-gap: clamp(24px, 5vw, 40px);
+  /* The overlay would crowd a short chart: stack the headline above the instrument
+     instead, and re-enable its pointer events. */
+  .instrument {
+    padding-top: clamp(16px, 4vh, 32px);
   }
-  .stage > .hero,
-  .stage > .quote,
-  .stage__artifact {
-    grid-column: 1;
-    grid-row: auto;
-  }
-  .stage__sticky {
+  .instrument__title {
     position: static;
+    max-width: none;
+    margin-bottom: clamp(16px, 4vw, 28px);
+    pointer-events: auto;
   }
-  .hero {
-    min-height: auto;
-    padding-block: clamp(24px, 5vh, 48px);
+  .instrument__chart {
+    order: 2;
+  }
+  .instrument {
+    display: flex;
+    flex-direction: column;
   }
   .hero__copy {
     max-width: none;
-  }
-  .quote {
-    min-height: auto;
-    padding-block: clamp(28px, 5vh, 56px);
   }
   .nav__links {
     gap: 18px;

@@ -47,7 +47,7 @@ export default function Hero() {
   }, [runAnalyze]);
 
   return (
-    <div className="hero" id="explore">
+    <div className="hero">
       <div className="hero__copy">
         <h1 className="hero__title">
           <span className="reveal" style={v(1)}>
