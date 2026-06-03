@@ -1071,3 +1071,208 @@
     align-items: flex-start;
   }
 }
+
+/* ── The Organism (the protagonist) ──────────────────────────────────────────
+   The real instrument, full-bleed and card-less, never idle: a quiet pose line +
+   live indicator above, the dominant plot between, the claim + the honest
+   "replaying recorded runs" note below. Amber = live / yours; ash = the autonomous
+   feed. The model thinking is the only animation; the page itself stays calm. */
+.organism {
+  position: relative;
+  min-height: min(96vh, 1040px);
+  display: flex;
+  flex-direction: column;
+  padding-top: clamp(10px, 2vh, 28px);
+  padding-bottom: clamp(16px, 3vh, 40px);
+}
+.organism__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.organism__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.organism__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.organism__live--thinking .organism__dot,
+.organism__live--standing .organism__dot,
+.organism__live--live .organism__dot,
+.organism__live--running .organism__dot,
+.organism__live--yours .organism__dot {
+  background: var(--accent);
+  box-shadow: 0 0 10px oklch(0.8 0.14 80 / 0.55);
+}
+.organism__live--thinking .organism__dot {
+  animation: organism-pulse 2.7s var(--ease-in-out-sine) infinite;
+}
+.organism__live--yours,
+.organism__live--live,
+.organism__live--running {
+  color: var(--accent);
+}
+@keyframes organism-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.82); }
+  50% { opacity: 1; transform: scale(1); }
+}
+.organism__seize {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+.organism__plabel {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.organism__input {
+  min-width: 0;
+  width: min(40ch, 46vw);
+  background: none;
+  border: none;
+  outline: none;
+  border-bottom: 1px solid oklch(1 0 0 / 0.1);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  padding: 4px 2px;
+  caret-color: var(--accent);
+  transition: border-color 220ms var(--ease-out);
+}
+.organism__input:focus {
+  border-bottom-color: oklch(0.8 0.14 80 / 0.5);
+}
+.organism__run {
+  flex: none;
+  border: 1px solid oklch(0.8 0.14 80 / 0.3);
+  background: oklch(0.8 0.14 80 / 0.08);
+  color: var(--accent);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  transition: background 200ms var(--ease-out);
+}
+.organism__run:hover:not(:disabled) {
+  background: oklch(0.8 0.14 80 / 0.16);
+}
+.organism__run:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.organism__spin {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid oklch(0.8 0.14 80 / 0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: prompt-spin 0.7s linear infinite;
+}
+.organism__chart {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: clamp(6px, 1.4vh, 16px) 0;
+}
+.organism__warming {
+  min-height: 50vh;
+}
+.organism__foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.organism__claim {
+  margin: 0;
+  max-width: 32ch;
+  font-family: var(--font-serif);
+  font-size: clamp(1.3rem, 2.3vw, 1.95rem);
+  line-height: 1.18;
+  color: var(--ink);
+}
+.organism__claim-dim {
+  color: var(--muted);
+}
+.organism__honest {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+  opacity: 0.85;
+}
+.organism__resume {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+.organism__resume-icon {
+  font-size: 1rem;
+}
+.organism__deepen {
+  position: absolute;
+  right: 0;
+  bottom: clamp(-6px, -1vh, -2px);
+  background: none;
+  border: 1px solid oklch(1 0 0 / 0.1);
+  color: var(--muted);
+  border-radius: 7px;
+  padding: 6px 11px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  transition: border-color 200ms var(--ease-out), color 200ms var(--ease-out);
+}
+.organism__deepen:hover {
+  color: var(--accent);
+  border-color: oklch(0.8 0.14 80 / 0.3);
+}
+
+@media (max-width: 720px) {
+  .organism {
+    min-height: auto;
+    padding-bottom: clamp(28px, 6vh, 56px);
+  }
+  .organism__seize {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+  .organism__input {
+    width: 100%;
+    flex: 1 1 auto;
+  }
+  .organism__chart {
+    min-height: 56vh;
+  }
+}

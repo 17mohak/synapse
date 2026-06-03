@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 
 import SiteNav from "./landing/SiteNav";
-import Stage from "./landing/Stage";
+import Organism from "./landing/Organism";
+import PullQuote from "./landing/PullQuote";
 import Fates from "./landing/Fates";
 import SiteFooter from "./landing/SiteFooter";
 import FocusOverlay from "./landing/FocusOverlay";
@@ -52,7 +53,10 @@ export default function App() {
       <div className="page__shell" ref={shellRef}>
         <SiteNav />
         <main className="page__main">
-          <Stage />
+          {/* The Organism is the protagonist (Act 0/1). The narrative orbits it as
+              the page descends: the claim, the three fates, the trust close. */}
+          <Organism />
+          <PullQuote />
           <Fates />
         </main>
         <SiteFooter />
