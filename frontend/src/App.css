@@ -926,12 +926,16 @@
   place-items: center;
   padding: clamp(14px, 3.5vh, 44px);
 }
+/* Quiet the field; do not frost it. The narrative dims and recedes (it dissolves),
+   while the dark canvas stays continuous behind the deepening instrument — so the
+   deep dive reads as descent into the same space, not a modal over a frosted page.
+   A whisper of blur softens the receding narrative without the glass-pane texture. */
 .focus__backdrop {
   position: absolute;
   inset: 0;
-  background: oklch(0.08 0.006 264 / 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: oklch(0.085 0.006 264 / 0.72);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 .focus__panel {
   position: relative;
@@ -987,6 +991,22 @@
 }
 .focus__chart {
   min-width: 0;
+}
+/* The belief leaderboard is the deepest layer of the instrument; it arrives a beat
+   after the chart settles (the panel's open animation sets .is-hydrated on finish),
+   so depth unfolds onto the persistent chart instead of the whole screen appearing
+   at once. Collapses to instant under the global reduced-motion freeze. */
+.focus__rail {
+  min-width: 0;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 460ms var(--ease-out-expo),
+    transform 460ms var(--ease-out-expo);
+}
+.focus__panel.is-hydrated .focus__rail {
+  opacity: 1;
+  transform: none;
 }
 /* Bound the chart so the chart, its transport/scrubber, and the belief rail are on
    screen together: scrubbing is a watch-while-you-drag interaction, so neither the

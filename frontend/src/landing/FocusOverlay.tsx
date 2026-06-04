@@ -16,20 +16,28 @@ const EXPO = "cubic-bezier(0.16, 1, 0.3, 1)";
 const prefersReduced = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// The card the panel emerges from / returns to, in viewport coordinates.
+// The live instrument the panel emerges from / returns to, in viewport
+// coordinates. This is the Organism's own chart (the protagonist the visitor is
+// watching) — not a dead thumbnail — so the deep dive grows out of the very object
+// on screen rather than appearing from the centre of nowhere.
 function originRect(): DOMRect | null {
-  return document.querySelector(".hero .card")?.getBoundingClientRect() ?? null;
+  return document.querySelector(".organism__chart")?.getBoundingClientRect() ?? null;
 }
 
-// Vector from the panel's centre to the origin card's centre (damped), so the
-// panel emerges *from the direction of* the thumbnail rather than the screen edge.
+// FLIP from the chart's footprint to the panel's resting position: the panel's
+// first frame occupies the chart's centre and (height-scaled) size, then settles.
+// Because land-8 put the chart on the same grid the panel uses, their widths nearly
+// match, so the visible growth is vertical — the chart's box unfolds into the taller
+// instrument (gaining its header, transport, and belief rail). It reads as the same
+// object deepening, not a new surface arriving.
 function emerge(panel: HTMLElement) {
   const o = originRect();
   const p = panel.getBoundingClientRect();
-  if (!o) return { tx: 0, ty: 0 };
+  if (!o) return { tx: 0, ty: 0, scale: 0.93 };
   return {
-    tx: (o.left + o.width / 2 - (p.left + p.width / 2)) * 0.32,
-    ty: (o.top + o.height / 2 - (p.top + p.height / 2)) * 0.32,
+    tx: o.left + o.width / 2 - (p.left + p.width / 2),
+    ty: o.top + o.height / 2 - (p.top + p.height / 2),
+    scale: Math.min(0.99, Math.max(0.82, o.height / p.height)),
   };
 }
 
@@ -47,10 +55,10 @@ export default function FocusOverlay() {
     const panel = panelRef.current;
     const backdrop = backdropRef.current;
     if (!panel || !backdrop || reduced.current) return;
-    const { tx, ty } = emerge(panel);
+    const { tx, ty, scale } = emerge(panel);
     panel.animate(
       [
-        { transform: `translate(${tx}px, ${ty}px) scale(0.93)`, opacity: 0 },
+        { transform: `translate(${tx}px, ${ty}px) scale(${scale})`, opacity: 0 },
         { transform: "translate(0, 0) scale(1)", opacity: 1 },
       ],
       { duration: 640, easing: EXPO, fill: "both" },
@@ -92,11 +100,11 @@ export default function FocusOverlay() {
       setFocusMode(false);
       return;
     }
-    const { tx, ty } = emerge(panel);
+    const { tx, ty, scale } = emerge(panel);
     const a = panel.animate(
       [
         { transform: "translate(0, 0) scale(1)", opacity: 1 },
-        { transform: `translate(${tx}px, ${ty}px) scale(0.93)`, opacity: 0 },
+        { transform: `translate(${tx}px, ${ty}px) scale(${scale})`, opacity: 0 },
       ],
       { duration: 460, easing: EXPO, fill: "forwards" },
     );
@@ -133,7 +141,12 @@ export default function FocusOverlay() {
               <div className="focus__chart">
                 <ClimbView result={result} readout={false} />
               </div>
-              <LayerBeliefs result={result} />
+              {/* Deeper instrumentation: arrives once the chart has settled
+                  (.is-hydrated), so the chart reads as the persistent object
+                  gaining depth rather than a pre-built screen appearing at once. */}
+              <div className="focus__rail">
+                <LayerBeliefs result={result} />
+              </div>
             </>
           ) : (
             <p className="focus__empty">Run a prompt to watch the model think.</p>
