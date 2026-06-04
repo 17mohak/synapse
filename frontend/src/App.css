@@ -1101,14 +1101,73 @@
   padding-bottom: clamp(14px, 2.2vh, 30px);
 }
 
-/* Top rail — the live-state cue, on the grid; a hairline below it brackets the top
-   of the specimen, so the chrome reads as a label on the instrument, not a header. */
+/* Top rail — the live-state cue (left) and the completion narration (right); a
+   hairline below it brackets the top of the specimen, so the chrome reads as a
+   label on the instrument, not a header. */
 .organism__top {
   flex: none;
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: clamp(16px, 3vw, 40px);
   padding-bottom: clamp(10px, 1.4vh, 16px);
   border-bottom: 1px solid oklch(1 0 0 / 0.06);
+}
+
+/* The completion narration — the model's act made legible: the given sentence
+   (mono, the input text) followed by the word it predicts to finish it (serif
+   amber, the model's utterance), with a working caret while it thinks. Sentence
+   -> prediction; the chart shows the layer-by-layer formation. Small and quiet so
+   it never competes with the claim — but it is the comprehension key. */
+.organism__completion {
+  margin: 0;
+  min-width: 0;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.3;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.organism__sentence {
+  color: var(--muted);
+}
+.organism__predicted {
+  font-family: var(--font-serif);
+  font-size: 1.18em;
+  letter-spacing: 0;
+  color: var(--accent);
+  animation: organism-arrive 520ms var(--ease-out-expo) both;
+}
+.organism__ask {
+  margin-left: 0.7em;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.06em;
+  color: var(--muted);
+  animation: organism-arrive 520ms var(--ease-out-expo) 360ms both;
+}
+/* The working caret: the empty next-word slot, blinking while the model thinks.
+   Steady (no blink) under reduced motion via the global animation freeze. */
+.organism__caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 5px;
+  vertical-align: -0.14em;
+  background: var(--accent);
+  box-shadow: 0 0 8px oklch(0.8 0.14 80 / 0.45);
+  animation: organism-caret 1.05s steps(1) infinite;
+}
+@keyframes organism-arrive {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes organism-caret {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
 }
 .organism__live {
   display: inline-flex;
@@ -1333,6 +1392,17 @@
     min-height: auto;
     justify-content: flex-start;
     padding-bottom: clamp(28px, 6vh, 56px);
+  }
+  /* The completion wraps to its own line so the predicted word + question (the
+     comprehension payload, at the end) are never truncated on a narrow rail. */
+  .organism__top {
+    flex-wrap: wrap;
+    gap: 6px 16px;
+  }
+  .organism__completion {
+    flex-basis: 100%;
+    text-align: left;
+    white-space: normal;
   }
   .organism__stage {
     margin: clamp(12px, 3vw, 22px) 0;

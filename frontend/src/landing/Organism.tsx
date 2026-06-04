@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AnalyzeResponse } from "../api/client";
 import { useStore } from "../state/store";
 import ClimbView from "../components/ClimbView";
+import { deriveVerdict } from "../components/climbEvents";
 
 // The Organism — the protagonist. A real GPT-2-small logit lens, never idle: it
 // poses itself a question, thinks it through the layers (the sweep), lands a
@@ -47,6 +48,7 @@ export default function Organism() {
   const [userMode, setUserMode] = useState(false); // showing a live, user-run result
   const [field, setField] = useState("");
   const [dirty, setDirty] = useState(false);
+  const [shownPrompt, setShownPrompt] = useState(""); // the sentence the model is completing (live)
   const reduced = useRef(prefersReduced());
 
   // Load the recorded runs.
@@ -94,6 +96,7 @@ export default function Organism() {
     setUserMode(true);
     setSeized(true);
     setDirty(true);
+    setShownPrompt(v); // the sentence the completion narration shows the model finishing
     void runAnalyze(v); // LIVE inference — the model thinks your sentence
   }
   function resume() {
@@ -120,10 +123,23 @@ export default function Organism() {
       : phase;
   const loading = storeStatus === "loading";
 
+  // The model's act, made legible: the given sentence and the word it predicts.
+  // The predicted token is the same winner the chart's Standing resolves to
+  // (deriveVerdict, reused read-only), so the narration and the chart can never
+  // disagree. While it thinks, a working caret holds the empty slot; when the run
+  // stands, the word arrives (and a beat later, the question the moat poses).
+  const sentence = (userMode ? shownPrompt : current?.prompt) ?? "";
+  const prediction = result?.trajectories?.length
+    ? deriveVerdict(result.trajectories)[0]?.token.trim() ?? ""
+    : "";
+  const resolved = userMode ? !loading && !!storeResult : phase === "standing";
+
   return (
     <section className="organism" id="explore" aria-label="Synapse — a transformer thinking">
-      {/* Top rail — the live-state cue, on the grid's left edge; a hairline brackets
-          the top of the specimen below it. */}
+      {/* Top rail — the live-state cue (left) and the completion narration (right):
+          the given sentence + the word the model predicts to finish it. This is the
+          sentence -> prediction gesture; the chart below shows it forming layer by
+          layer. A hairline brackets the top of the specimen. */}
       <div className="organism__top">
         <span className={`organism__live organism__live--${live}`}>
           <span className="organism__dot" aria-hidden="true" />
@@ -131,6 +147,21 @@ export default function Organism() {
             {live === "live" ? "live · gpt-2 small" : live === "running" ? "running" : live === "yours" ? "yours" : live === "standing" ? "resolved" : "thinking"}
           </span>
         </span>
+
+        {sentence && (
+          <p className="organism__completion" aria-live="polite">
+            <span className="organism__sentence">{sentence}</span>
+            {resolved && prediction ? (
+              <span className="organism__resolve">
+                {" "}
+                <span className="organism__predicted">{prediction}</span>
+                <span className="organism__ask">Did it know?</span>
+              </span>
+            ) : (
+              <span className="organism__caret" aria-hidden="true" />
+            )}
+          </p>
+        )}
       </div>
 
       {/* The framed instrument, with the claim set into its reliably-empty upper-left
