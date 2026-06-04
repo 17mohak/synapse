@@ -122,14 +122,40 @@ export default function Organism() {
 
   return (
     <section className="organism" id="explore" aria-label="Synapse — a transformer thinking">
-      <div className="organism__head">
+      {/* Top rail — the live-state cue, on the grid's left edge; a hairline brackets
+          the top of the specimen below it. */}
+      <div className="organism__top">
         <span className={`organism__live organism__live--${live}`}>
           <span className="organism__dot" aria-hidden="true" />
           <span className="organism__livelabel">
             {live === "live" ? "live · gpt-2 small" : live === "running" ? "running" : live === "yours" ? "yours" : live === "standing" ? "resolved" : "thinking"}
           </span>
         </span>
+      </div>
 
+      {/* The framed instrument, with the claim set into its reliably-empty upper-left
+          negative space as the opening thesis — a peer to the standing on the right.
+          Trajectories start low-left and the answer resolves right, so the claim,
+          the instrument, and the standing form one balanced triangle. */}
+      <div className="organism__stage">
+        <div className="organism__claim-anchor">
+          <p className="organism__claim">
+            A machine&rsquo;s certainty is late, fragile, and reversible.
+            <span className="organism__claim-dim"> Watch it almost decide.</span>
+          </p>
+        </div>
+        <div className={`organism__chart${phase === "thinking" && !userMode && !seized ? " is-thinking" : ""}`}>
+          {result ? (
+            <ClimbView result={result} variant="hero" chrome={false} readout={false} />
+          ) : (
+            <div className="organism__warming" aria-hidden="true" />
+          )}
+        </div>
+      </div>
+
+      {/* Command rail — the instrument's controls: the seize prompt (left) and the
+          honest note / live-feed controls (right), bracketed by a hairline above. */}
+      <div className="organism__rail">
         <form className="organism__seize" onSubmit={submit}>
           <span className="organism__plabel">Prompt</span>
           <input
@@ -145,40 +171,29 @@ export default function Organism() {
             {loading ? <span className="organism__spin" aria-hidden="true" /> : "Run"}
           </button>
         </form>
-      </div>
 
-      <div className={`organism__chart${phase === "thinking" && !userMode && !seized ? " is-thinking" : ""}`}>
-        {result ? (
-          <ClimbView result={result} variant="hero" chrome={false} readout={false} />
-        ) : (
-          <div className="organism__warming" aria-hidden="true" />
-        )}
+        <div className="organism__rail-aside">
+          {userMode || seized ? (
+            <>
+              <button className="organism__resume" type="button" onClick={resume}>
+                <span className="organism__resume-icon" aria-hidden="true">←</span>
+                back to the live feed
+              </button>
+              {/* Lean in: the same instrument, full attention. Only meaningful once a
+                  real result is in the store (after a live run). */}
+              {userMode && storeResult && (
+                <button className="organism__deepen" type="button" onClick={() => setFocusMode(true)}>
+                  open the full instrument
+                </button>
+              )}
+            </>
+          ) : (
+            <p className="organism__honest">
+              Replaying recorded runs. Type a sentence to watch it think one live.
+            </p>
+          )}
+        </div>
       </div>
-
-      <div className="organism__foot">
-        <p className="organism__claim">
-          A machine&rsquo;s certainty is late, fragile, and reversible.
-          <span className="organism__claim-dim"> Watch it almost decide.</span>
-        </p>
-        {userMode || seized ? (
-          <button className="organism__resume" type="button" onClick={resume}>
-            <span className="organism__resume-icon" aria-hidden="true">←</span>
-            back to the live feed
-          </button>
-        ) : (
-          <p className="organism__honest">
-            Replaying recorded runs. Type a sentence to watch it think one live.
-          </p>
-        )}
-      </div>
-
-      {/* Lean in: the same instrument, full attention. Only meaningful once a real
-          result is in the store (after a live run). */}
-      {userMode && storeResult && (
-        <button className="organism__deepen" type="button" onClick={() => setFocusMode(true)}>
-          open the full instrument
-        </button>
-      )}
     </section>
   );
 }

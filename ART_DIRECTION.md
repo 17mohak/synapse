@@ -34,8 +34,12 @@ layer a problem lives in prevents re-solving an already-correct layer.
    continuous document; the narrative orbits the instrument. **STATUS: settled.**
    Do not add/remove/reorder sections as a "design" change.
 3. **Art direction** — *how it is staged: hierarchy, scale, proportion, negative
-   space, typography, alignment, narrative placement, rhythm.* **STATUS: this is the
-   current bottleneck.** This is the only layer open for the staging pass.
+   space, typography, alignment, narrative placement, rhythm.* **STATUS: first
+   staging pass implemented (land-8) — the §6 plan of record is shipped.** The claim
+   is now the upper-left thesis anchor, the instrument is framed in air, chrome is
+   two quiet rails, and one grid / one voice carries the live cue → claim → prompt →
+   pull-quote. This layer stays open for further refinement, but the named failures
+   of §3 are addressed. Do not re-open layers 1/2 under cover of "it could be tighter."
 
 If a proposed change alters layer 1 or 2, it is out of scope for design work.
 
@@ -159,10 +163,15 @@ architecture again. The architecture and model are right. **Stage it.**
 
 ---
 
-## 6. The plan of record: the staging pass (not yet implemented)
+## 6. The plan of record: the staging pass (IMPLEMENTED — land-8)
 
-The approved direction for the next pass (art direction only; no model/IA/feature/
+The approved direction, now shipped (art direction only; no model/IA/feature/
 `ClimbView` changes). Governing move: **invert the authority and impose one grid.**
+Implementation note (land-8): the claim measure landed at ~22ch (not 16ch) and the
+size at `clamp(1.95rem, 3.4vw, 2.95rem)` — at 16ch the full thesis wrapped to ~8
+lines and collided with the layer axis and the diagonal's base; ~22ch keeps it to a
+compact block in the genuinely-empty upper-left, still the largest type on the page
+and a clear peer to the standing. Everything else below was implemented as written.
 
 - **Claim becomes the upper-left anchor** (the opening thesis, not a caption): large
   editorial serif, ~`clamp(2.4rem, 4vw, 3.6rem)`, 2–3 lines, tight leading (~1.08),

@@ -122,9 +122,13 @@
   display: block;
 }
 
-/* Shared content frame */
+/* Shared content frame. One grid for the whole page: nav, the instrument, the
+   pull-quote, the fates, and the footer all align to the same left margin and the
+   same max measure, so the page reads as one authored column, not stacked slides. */
 .nav,
 .stage,
+.organism,
+.quote,
 .fates,
 .foot__inner {
   width: 100%;
@@ -673,19 +677,23 @@
   line-height: 1.5;
 }
 
-/* ── Pull-quote (the narrative beat below the instrument) ─────────────────────── */
+/* ── Pull-quote (the narrative beat below the instrument) ─────────────────────────
+   Left-aligned to the claim's grid, same serif voice: scrolling down reads as the
+   next line of the same narrator (the claim planted "watch it almost decide"; the
+   quote completes it). Generous top space eases the density off the command rail so
+   the transition is continuous, not an abrupt slide cut. */
 .quote {
-  text-align: center;
-  padding-block: clamp(48px, 9vh, 120px);
+  text-align: left;
+  padding-block: clamp(72px, 13vh, 168px);
 }
 .quote__text {
   font-family: var(--font-serif);
   font-weight: 400;
-  font-size: clamp(1.8rem, 3.6vw, 2.8rem);
-  line-height: 1.16;
-  letter-spacing: -0.01em;
+  font-size: clamp(1.9rem, 3.8vw, 2.9rem);
+  line-height: 1.14;
+  letter-spacing: -0.012em;
   color: var(--ink);
-  margin: 0 auto;
+  margin: 0;
   max-width: 22ch;
   text-wrap: balance;
 }
@@ -694,7 +702,7 @@
   color: var(--accent);
 }
 .quote__body {
-  margin: clamp(20px, 3vw, 28px) auto 0;
+  margin: clamp(22px, 3vw, 30px) 0 0;
   max-width: 52ch;
   color: var(--muted);
   font-size: 1.04rem;
@@ -1072,25 +1080,35 @@
   }
 }
 
-/* ── The Organism (the protagonist) ──────────────────────────────────────────
-   The real instrument, full-bleed and card-less, never idle: a quiet pose line +
-   live indicator above, the dominant plot between, the claim + the honest
-   "replaying recorded runs" note below. Amber = live / yours; ash = the autonomous
-   feed. The model thinking is the only animation; the page itself stays calm. */
+/* ── The Organism (the protagonist), staged ──────────────────────────────────
+   Staging pass (ART_DIRECTION sec. 6): the authority is inverted and one grid is
+   imposed. The instrument is FRAMED in calibrated air, not maximized; the claim is
+   the upper-left anchor (the opening thesis, a peer to the standing on the right);
+   two quiet hairline rails bracket the specimen — the live cue above, the command
+   line below. The live cue, claim, prompt, and the pull-quote that follows all
+   align to the same left margin; the standing is the consistent right anchor.
+   Reading order, instantly rankable by scale + position:
+   claim (frame) -> instrument (performance) -> standing (answer) -> chrome (controls).
+   Amber = live / yours; ash = the autonomous feed. The model thinking is the only
+   animation; the page itself stays calm. */
 .organism {
   position: relative;
-  min-height: min(96vh, 1040px);
+  min-height: clamp(640px, 96vh, 1080px);
   display: flex;
   flex-direction: column;
-  padding-top: clamp(10px, 2vh, 28px);
-  padding-bottom: clamp(16px, 3vh, 40px);
+  justify-content: center; /* float the framed specimen + its rails in air */
+  padding-top: clamp(10px, 1.8vh, 24px);
+  padding-bottom: clamp(14px, 2.2vh, 30px);
 }
-.organism__head {
+
+/* Top rail — the live-state cue, on the grid; a hairline below it brackets the top
+   of the specimen, so the chrome reads as a label on the instrument, not a header. */
+.organism__top {
+  flex: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
+  padding-bottom: clamp(10px, 1.4vh, 16px);
+  border-bottom: 1px solid oklch(1 0 0 / 0.06);
 }
 .organism__live {
   display: inline-flex;
@@ -1129,13 +1147,86 @@
   0%, 100% { opacity: 0.4; transform: scale(0.82); }
   50% { opacity: 1; transform: scale(1); }
 }
+
+/* The framed instrument. Capped to ~64vh and floated between the two rails: it
+   stops bleeding to the edges and reads as a presented specimen, so the residual
+   right-side void shrinks proportionally. */
+.organism__stage {
+  position: relative;
+  flex: none;
+  margin: clamp(16px, 3.2vh, 42px) 0;
+}
+.organism__chart {
+  width: 100%;
+  height: clamp(420px, 64vh, 680px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.organism__warming {
+  min-height: clamp(420px, 64vh, 680px);
+}
+
+/* The claim — the opening thesis, set into the chart's reliably-empty upper-left.
+   Large editorial serif, tight leading, a peer in weight to the standing on the
+   right (the two anchor a balanced triangle, trajectories the connecting diagonal).
+   A faint scrim — the page's own bg, locally strengthened and fading out — keeps it
+   legible where faint early trajectories pass behind it, without becoming a panel. */
+.organism__claim-anchor {
+  position: absolute;
+  top: clamp(6px, 2.4vh, 30px);
+  left: 0;
+  z-index: 2;
+  max-width: 22ch;
+  pointer-events: none;
+}
+.organism__claim-anchor::before {
+  content: "";
+  position: absolute;
+  inset: -16% -40% -22% -16%;
+  z-index: -1;
+  background: radial-gradient(
+    124% 80% at 26% 40%,
+    oklch(0.115 0.006 264 / 0.95),
+    oklch(0.115 0.006 264 / 0.64) 46%,
+    oklch(0.115 0.006 264 / 0) 78%
+  );
+  pointer-events: none;
+}
+.organism__claim {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.95rem, 3.4vw, 2.95rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.organism__claim-dim {
+  color: var(--muted);
+}
+
+/* Command rail — the instrument's controls. The seize prompt (left) and the honest
+   note / live-feed controls (right), bracketed by a hairline above. Moving the
+   prompt to the base reads as the instrument's command line and frees the top for
+   the claim. Placement only — same input, same behavior. */
+.organism__rail {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(16px, 3vw, 36px);
+  flex-wrap: wrap;
+  padding-top: clamp(10px, 1.4vh, 16px);
+  border-top: 1px solid oklch(1 0 0 / 0.06);
+}
 .organism__seize {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
-  flex: 1 1 auto;
-  justify-content: flex-end;
+  flex: 0 1 auto;
+  justify-content: flex-start;
 }
 .organism__plabel {
   font-family: var(--font-mono);
@@ -1146,7 +1237,7 @@
 }
 .organism__input {
   min-width: 0;
-  width: min(40ch, 46vw);
+  width: min(38ch, 50vw);
   background: none;
   border: none;
   outline: none;
@@ -1189,34 +1280,12 @@
   border-radius: 50%;
   animation: prompt-spin 0.7s linear infinite;
 }
-.organism__chart {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  margin: clamp(6px, 1.4vh, 16px) 0;
-}
-.organism__warming {
-  min-height: 50vh;
-}
-.organism__foot {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-.organism__claim {
-  margin: 0;
-  max-width: 32ch;
-  font-family: var(--font-serif);
-  font-size: clamp(1.3rem, 2.3vw, 1.95rem);
-  line-height: 1.18;
-  color: var(--ink);
-}
-.organism__claim-dim {
-  color: var(--muted);
+.organism__rail-aside {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 .organism__honest {
   margin: 0;
@@ -1241,9 +1310,7 @@
   font-size: 1rem;
 }
 .organism__deepen {
-  position: absolute;
-  right: 0;
-  bottom: clamp(-6px, -1vh, -2px);
+  flex: none;
   background: none;
   border: 1px solid oklch(1 0 0 / 0.1);
   color: var(--muted);
@@ -1260,19 +1327,40 @@
 }
 
 @media (max-width: 720px) {
+  /* The upper-left overlay crowds a short chart on mobile, so the claim stacks
+     above the instrument (static, scrim off) and the rails wrap to single rows. */
   .organism {
     min-height: auto;
+    justify-content: flex-start;
     padding-bottom: clamp(28px, 6vh, 56px);
+  }
+  .organism__stage {
+    margin: clamp(12px, 3vw, 22px) 0;
+  }
+  .organism__claim-anchor {
+    position: static;
+    max-width: none;
+    margin-bottom: clamp(14px, 3.5vw, 22px);
+  }
+  .organism__claim-anchor::before {
+    display: none;
+  }
+  .organism__chart {
+    height: auto;
+    min-height: 56vh;
+  }
+  .organism__rail {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
   }
   .organism__seize {
     flex-basis: 100%;
+    width: 100%;
     justify-content: flex-start;
   }
   .organism__input {
     width: 100%;
     flex: 1 1 auto;
-  }
-  .organism__chart {
-    min-height: 56vh;
   }
 }
