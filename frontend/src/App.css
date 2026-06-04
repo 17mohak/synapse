@@ -992,28 +992,58 @@
 .focus__body {
   position: relative;
   display: grid;
-  /* The chart is the dominant mass (P1); the belief rail is subordinate (narrower)
-     so the instrument claims the space rather than sharing it evenly. */
-  grid-template-columns: minmax(0, 1fr) minmax(208px, 288px);
-  gap: clamp(16px, 1.8vw, 32px);
+  /* P4 — on arrival the chart is the only thing that matters: the belief rail's
+     column is collapsed to 0, so the chart claims the FULL panel width (larger than
+     the homepage instrument). Once the chart settles (.is-hydrated) the rail column
+     opens and the leaderboard emerges beside it. The chart is the dominant mass; the
+     rail is subordinate (narrower). */
+  grid-template-columns: minmax(0, 1fr) 0px;
+  gap: 0;
   align-items: start;
+  transition:
+    grid-template-columns 620ms var(--ease-out-expo),
+    gap 620ms var(--ease-out-expo);
+}
+.focus__panel.is-hydrated .focus__body {
+  grid-template-columns: minmax(0, 1fr) clamp(208px, 22vw, 288px);
+  gap: clamp(16px, 1.8vw, 32px);
 }
 .focus__chart {
   min-width: 0;
 }
-/* The belief leaderboard is the deepest layer of the instrument; it arrives a beat
-   after the chart settles (the panel's open animation sets .is-hydrated on finish),
-   so depth unfolds onto the persistent chart instead of the whole screen appearing
-   at once. Collapses to instant under the global reduced-motion freeze. */
+/* P4 — the deeper instrumentation is deferred so the chart arrives alone and large,
+   then the tools emerge once it settles (.is-hydrated, set when the open animation
+   finishes): the belief rail, the prompt controls (head), and — reached into without
+   editing ClimbView — the chart's own scrubber, thesis, and scalenote. Reduced motion
+   collapses all of this to instant via the global freeze, so nothing is ever hidden. */
 .focus__rail {
   min-width: 0;
+  overflow: hidden; /* clipped while the column is collapsed */
   opacity: 0;
   transform: translateY(10px);
   transition:
     opacity 460ms var(--ease-out-expo),
     transform 460ms var(--ease-out-expo);
 }
-.focus__panel.is-hydrated .focus__rail {
+.focus__head {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 460ms var(--ease-out-expo),
+    transform 460ms var(--ease-out-expo);
+}
+.focus__panel:not(.is-hydrated) .climb__head,
+.focus__panel:not(.is-hydrated) .climb__thesis,
+.focus__panel:not(.is-hydrated) .scrubber {
+  opacity: 0;
+}
+.focus__panel .climb__head,
+.focus__panel .climb__thesis,
+.focus__panel .scrubber {
+  transition: opacity 460ms var(--ease-out-expo);
+}
+.focus__panel.is-hydrated .focus__rail,
+.focus__panel.is-hydrated .focus__head {
   opacity: 1;
   transform: none;
 }
