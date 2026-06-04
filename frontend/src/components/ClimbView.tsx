@@ -18,6 +18,13 @@ interface ClimbViewProps {
   /** When false, drop the built-in per-layer readout (the host shows its own,
    *  e.g. the belief leaderboard). Only meaningful with chrome. */
   readout?: boolean;
+  /** When false, the build does NOT auto-play the opening sweep; it renders the
+   *  resolved final-layer state immediately (the same path reduced motion uses),
+   *  so a host can open the chart at the Standing the visitor was just watching
+   *  (object permanence) and let Replay reconstruct the climb on demand. The sweep
+   *  algorithm, applyLayer, and the Standing are unchanged — only whether runSweep
+   *  is invoked on build. */
+  autoSweep?: boolean;
 }
 
 const Y_TICKS = [0, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1.0];
@@ -37,7 +44,7 @@ const RIVAL_MIN = 15; // floor so small rivals stay readable
 // layer, a cursor tracks it, the winner ignites amber at the decisive layer, and
 // the readout follows. A steady d3.timer sweeps that frontier 0 -> last after
 // each analysis; scrubbing cancels it; reduced motion renders the resolved state.
-export default function ClimbView({ result, variant = "default", chrome = true, readout = true }: ClimbViewProps) {
+export default function ClimbView({ result, variant = "default", chrome = true, readout = true, autoSweep = true }: ClimbViewProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const applyRef = useRef<((frontier: number) => void) | null>(null);
   // The running sweep timer + a handle to restart the sweep on demand (the
@@ -393,10 +400,19 @@ export default function ClimbView({ result, variant = "default", chrome = true, 
       timerRef.current = timer;
     };
     sweepRef.current = runSweep;
-    runSweep();
+    // Auto-play the opening sweep, OR (host opt-out) render the resolved final
+    // state immediately so the chart opens at the Standing already on screen.
+    // The else-branch reuses the exact resolved-render path runSweep takes under
+    // reduced motion; Replay still calls runSweep via sweepRef.
+    if (autoSweep) runSweep();
+    else {
+      applyLayer(last);
+      setPlayheadLayer(last);
+      setPlayState("idle");
+    }
     return () => timerRef.current?.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result, events, clipId]);
+  }, [result, events, clipId, autoSweep]);
 
   // --- Effect B: manual scrub (only when the sweep is not running). ---
   useEffect(() => {

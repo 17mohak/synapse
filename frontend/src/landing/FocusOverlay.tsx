@@ -139,7 +139,9 @@ export default function FocusOverlay() {
           {result ? (
             <>
               <div className="focus__chart">
-                <ClimbView result={result} readout={false} />
+                {/* Open at the resolved Standing the visitor was just watching
+                    (object permanence); Replay reconstructs the climb on demand. */}
+                <ClimbView result={result} readout={false} autoSweep={false} />
               </div>
               {/* Deeper instrumentation: arrives once the chart has settled
                   (.is-hydrated), so the chart reads as the persistent object
