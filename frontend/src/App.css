@@ -930,26 +930,33 @@
    while the dark canvas stays continuous behind the deepening instrument — so the
    deep dive reads as descent into the same space, not a modal over a frosted page.
    A whisper of blur softens the receding narrative without the glass-pane texture. */
+/* The field deepens (P2): the periphery recedes toward black so the instrument is
+   what you look at, and the surroundings fall away as when you bring an object to
+   your face. It stays the page's own dark hue (continuous space, not a foreign
+   scrim), so this reads as the same field deepened, not a modal. */
 .focus__backdrop {
   position: absolute;
   inset: 0;
-  background: oklch(0.085 0.006 264 / 0.72);
+  background: oklch(0.07 0.006 264 / 0.84);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
+/* No card (P2). The deep dive is not a bordered, shadowed, rounded plane floating
+   above a scrim — that is the loudest "new surface / navigation" tell. The
+   instrument sits directly on the deepened field: no border, no drop-shadow, no
+   hard rectangle. A soft, edgeless pool lifts it just enough for legibility without
+   ever drawing an edge. Wider and less inset (P1) so the instrument can dominate. */
 .focus__panel {
   position: relative;
   z-index: 1;
-  width: min(1180px, 95vw);
-  max-height: 92vh;
+  width: min(1480px, 96vw);
+  max-height: 94vh;
   overflow-y: auto;
-  border-radius: 20px;
-  border: 1px solid oklch(0.8 0.12 80 / 0.16);
-  background:
-    radial-gradient(120% 70% at 78% 0%, oklch(0.24 0.02 80 / 0.3), transparent 55%),
-    linear-gradient(180deg, oklch(0.2 0.008 264 / 0.97), oklch(0.14 0.006 264 / 0.98));
-  box-shadow: 0 70px 160px -50px oklch(0 0 0 / 0.95);
-  padding: clamp(22px, 2.6vw, 40px);
+  border: none;
+  border-radius: 0;
+  background: radial-gradient(120% 92% at 50% 26%, oklch(0.21 0.008 264 / 0.34), transparent 72%);
+  box-shadow: none;
+  padding: clamp(10px, 1.6vw, 26px) clamp(12px, 1.8vw, 30px);
   transform-origin: center;
   will-change: transform, opacity;
 }
@@ -985,8 +992,10 @@
 .focus__body {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(248px, 332px);
-  gap: clamp(20px, 2.4vw, 44px);
+  /* The chart is the dominant mass (P1); the belief rail is subordinate (narrower)
+     so the instrument claims the space rather than sharing it evenly. */
+  grid-template-columns: minmax(0, 1fr) minmax(208px, 288px);
+  gap: clamp(16px, 1.8vw, 32px);
   align-items: start;
 }
 .focus__chart {
@@ -1009,10 +1018,12 @@
   transform: none;
 }
 /* Bound the chart so the chart, its transport/scrubber, and the belief rail are on
-   screen together: scrubbing is a watch-while-you-drag interaction, so neither the
-   control nor the leaderboard can live below the fold. The SVG keeps its aspect. */
+   screen together. The previous cap (46vh/440px) made the deep-dive chart SMALLER
+   than the Organism's (~64vh), so "opening" shrank the instrument — the core
+   geometric contradiction (P1). Raised so the chart matches/exceeds the Organism
+   and becomes the dominant mass; the controls still fit within the 94vh panel. */
 .focus .climb__svg {
-  max-height: min(46vh, 440px);
+  max-height: min(74vh, 720px);
 }
 
 /* On a narrow panel the rail drops below the chart rather than crushing both. */
